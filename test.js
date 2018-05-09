@@ -7,6 +7,7 @@ let object1 = {
   testInt: 23,
   testDouble: 23.123123,
   testLong: long.fromString('9223372036854775807'),
+  testUnsafe: 999999999999999,
   testArray: [ 1, 2, 3 ],
   testObject: {
     key1: '1',

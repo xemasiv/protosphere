@@ -1,6 +1,8 @@
 const pbf = require('pbf');
 const long = require('long');
 const debug = require('debug')('Protosphere');
+const warn = require('debug')('Protosphere warning');
+warn.enabled = true;
 let errors = [
   'Invalid parameter received.'
 ];
@@ -130,10 +132,14 @@ String
 Number(Varint)
 
 Notes:
-
+6553565535
+2147483647
 writePackedSFixed32 readPackedSFixed32    -2147483648  2147483647
 writePackedFixed32  readPackedFixed32      0            4294967295
-
+9007199254740991
+      4294967295
+      999999999999999
+      999999999999999
 */
 class Protosphere {
   static fromObject (parameter) {
@@ -142,32 +148,68 @@ class Protosphere {
 
       let protobuf = new pbf();
       let genesis = '';
-      // tag === 1, destructure genesis
-      // tag === 2, destructure as packed booleans
-      // tag === 3, destructure as packed doubles
-      // genesis = genesis.split(' ');
-      // genesis[0] === final tag of string fields
-      // genesis[n]
-        // === '[25, 26]'
+      // tag === 1, genesis
 
-      // A = index as string, from 0
-      // B = index as number, from 0
-      //
-      // STACK
-      //
+      // destructure genesis
+      // genesis = genesis.split(' ');
+
+      // hasBooleans = false
+      // hasDoubles = false
+      // hasVarints = false
+      // hasBooleans = false
+
+      // hasStrings = false
+      // hasBytes = false
+
+      // stringStart = 2;
+      // stringEnd = 0;
+      // byteStart = 2;
+      // byteEnd = 0;
+
+      // genesis[0] === if we have booleans
+        // ? stringStart++, byteStart++, hasBooleans = true
+      // genesis[1] === if we have doubles
+        // ? stringStart++, byteStart++, hasDoubles = true
+      // genesis[2] === if we have varints
+        // ? stringStart++, byteStart++, hasVarints = true
+
+      // genesis[3] === if we have strings, how many string fields do we have
+        // ? byteStart++, hasStrings = true, stringEnd = genesis[3]
+      // genesis[4] === if we have bytes, how many bytes fields do we have
+        // ? hasBytes = true, byteEnd = genesis[4]
+
+      // genesis[5 to n], made of two parts, concatenated.
+        // key    --> s0
+        // value
+        //    --> b1, if boolean
+        //    --> d1, if double
+        //    --> i1, if integer
+        //    --> [, if array start
+        //    --> ], if array end
+        //    --> {, if object start
+        //    --> }, if object end
 
       const traverse = (obj) => {
         debug(Object.keys(obj));
         Object.keys(obj).map((key) => {
           let val = obj[key];
           debug(key, val, classify(val));
-
           switch (classify(val)) {
             case 'string':
               break;
-            case 'number':
+            case 'double':
+              break;
+            case 'integer':
+              if (long.fromNumber(val).getNumBitsAbs() >= 50) {
+                warn('@ key', key);
+                warn('@ val', val);
+                warn('raw >= 50 bit integer found.');
+                warn('unsafe, please wrap with long.js, we support it.');
+              }
               break;
             case 'boolean':
+              break;
+            case 'array':
               break;
             case 'object':
               traverse(val);
