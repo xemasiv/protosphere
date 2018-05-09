@@ -203,14 +203,12 @@ class Protosphere {
         //    --> ], if array end
         //    --> {, if object start
         //    --> }, if object end
-      const genesis = [];
+      const exodus = [];
       const booleans = [];
       const doubles = [];
       const integers = [];
       const strings = [];
       const bytes = [];
-
-
       const traverse = (obj) => {
         debug(Object.keys(obj));
         Object.keys(obj).map((key) => {
@@ -220,12 +218,12 @@ class Protosphere {
             case 'boolean':
               if (booleans.includes(val) === false) booleans.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
               break;
             case 'double':
               if (doubles.includes(val) === false) doubles.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
               break;
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
@@ -234,29 +232,30 @@ class Protosphere {
               }
               if (integers.includes(val) === false) integers.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
               break;
             case 'string':
               if (strings.includes(val) === false) strings.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
               break;
             case 'array':
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
+              traverse(val);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
               break;
             case 'object':
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
               traverse(val);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
+              exodus.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
               break;
           }
         });
       };
       traverse(parameter);
-      debug('genesis:', genesis);
+      debug('exodus:', exodus);
       debug('booleans:', booleans);
       debug('doubles:', doubles);
       debug('integers:', integers);
