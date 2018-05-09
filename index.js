@@ -230,8 +230,7 @@ class Protosphere {
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
                 warn('@ key', key, '@ val', val);
-                warn('raw >= 50 bit integer found.');
-                warn('unsafe, please wrap with long.js, we support it.');
+                warn('raw >= 50 bit int currently unsafe w/o long.js support.');
               }
               if (integers.includes(val) === false) integers.push(val);
               if (strings.includes(key) === false) strings.push(key);
