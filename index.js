@@ -229,8 +229,7 @@ class Protosphere {
               break;
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
-                warn('@ key', key);
-                warn('@ val', val);
+                warn('@ key', key, '@ val', val);
                 warn('raw >= 50 bit integer found.');
                 warn('unsafe, please wrap with long.js, we support it.');
               }
@@ -250,9 +249,9 @@ class Protosphere {
               break;
             case 'object':
               if (strings.includes(key) === false) strings.push(key);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
               traverse(val);
-              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
               break;
           }
         });
