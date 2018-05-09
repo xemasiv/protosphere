@@ -1,0 +1,32 @@
+{
+  "name": "protosphere",
+  "version": "0.0.1-super-alpha",
+  "description": "protocol buffers made easy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xemasiv/protosphere.git"
+  },
+  "keywords": [
+    "protocol",
+    "buffers",
+    "made",
+    "easy",
+    "from",
+    "to",
+    "object",
+    "map"
+  ],
+  "author": "xemasiv <xemasiv@gmail.com>",
+  "license": "CC-BY-4.0",
+  "bugs": {
+    "url": "https://github.com/xemasiv/protosphere/issues"
+  },
+  "homepage": "https://github.com/xemasiv/protosphere#readme",
+  "dependencies": {
+    "pbf": "^3.1.0"
+  }
+}
