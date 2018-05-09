@@ -3,9 +3,10 @@ Protosphere.enableDebug();
 
 let object1 = {
   name: 'xemasiv',
-  age: 23,
-  array: [ 1, 2, 3 ],
-  object: {
+  sampleInt: 23,
+  sampleDouble: 23.123123,
+  sampleArray: [ 1, 2, 3 ],
+  sampleObject: {
     key1: '1',
     key2: 2
   },
