@@ -1,4 +1,4 @@
-const PBF = require('pbf');
+const pbf = require('pbf');
 const debug = require('debug')('Protosphere');
 let errors = [
   'Invalid parameter received.'
@@ -11,7 +11,8 @@ const classify = (subject) => {
     case 'number':
       if (isNaN(subject) === true) return 'nan';
       if (isFinite(subject) === false) return 'infinity';
-      return 'number';
+      if (Number.isInteger(subject) === false) return 'double';
+      return 'integer';
       break;
     case 'undefined':
       return 'undefined';
@@ -119,15 +120,49 @@ const classify = (subject) => {
       break;
   }
 };
+/*
+Supported types:
+String
+Number(Varint)
+
+Syntax:
+
+
+*/
 class Protosphere {
   static fromObject (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
-      debug(Object.keys(parameter));
-      Object.keys(parameter).map((key) => {
-        let val = parameter[key];
-        debug(key, val, classify(val));
-      });
+
+      let protobuf = new pbf();
+      let genesis = '';
+      // A = index as string, from 0
+      // B = index as number, from 0
+      //
+      // STACK
+      //
+
+      const traverse = (obj) => {
+        debug(Object.keys(obj));
+        Object.keys(obj).map((key) => {
+          let val = obj[key];
+          debug(key, val, classify(val));
+
+          switch (classify(val)) {
+            case 'string':
+              break;
+            case 'number':
+              break;
+            case 'boolean':
+              break;
+            case 'object':
+              traverse(val);
+              break;
+          }
+
+        });
+      };
+      traverse(parameter);
       debug('OBJECT ok');
     });
   }
