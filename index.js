@@ -125,8 +125,10 @@ Supported types:
 String
 Number(Varint)
 
-Syntax:
+Notes:
 
+writePackedSFixed32 readPackedSFixed32    -2147483648  2147483647
+writePackedFixed32 readPackedFixed32      0            4294967295
 
 */
 class Protosphere {
@@ -136,6 +138,14 @@ class Protosphere {
 
       let protobuf = new pbf();
       let genesis = '';
+      // tag === 1, destructure genesis
+      // tag === 2, destructure as packed booleans
+      // tag === 3, destructure as packed doubles
+      // genesis = genesis.split(' ');
+      // genesis[0] === final tag of string fields
+      // genesis[n]
+        // === '[25, 26]'
+
       // A = index as string, from 0
       // B = index as number, from 0
       //
