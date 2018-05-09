@@ -255,12 +255,22 @@ class Protosphere {
         });
       };
       traverse(parameter);
+      let genesis = concat(
+        booleans.length ? 1 : 0,
+        doubles.length ? 1 : 0,
+        integers.length ? 1 : 0,
+        strings.length ? 1 : 0,
+        bytes.length ? 1 : 0,
+        ' ', exodus.length
+      );
+
       debug('exodus:', exodus);
       debug('booleans:', booleans);
       debug('doubles:', doubles);
       debug('integers:', integers);
       debug('strings:', strings);
       debug('bytes:', bytes);
+      debug('genesis:', genesis);
       debug('OBJECT ok');
     });
   }
