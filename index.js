@@ -161,8 +161,7 @@ class Protosphere {
   static fromObject (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
-
-      let protobuf = new pbf();
+      debug('OBJECT ok');
       // tag === 1, genesis
 
       // destructure genesis
@@ -261,7 +260,9 @@ class Protosphere {
         integers.length ? 1 : 0,
         strings.length ? 1 : 0,
         bytes.length ? 1 : 0,
-        ' ', exodus.length
+        ' ', exodus.length,
+        ' ', strings.length,
+        ' ', bytes.length
       );
 
       debug('exodus:', exodus);
@@ -271,7 +272,31 @@ class Protosphere {
       debug('strings:', strings);
       debug('bytes:', bytes);
       debug('genesis:', genesis);
-      debug('OBJECT ok');
+
+      let protobuf = new pbf();
+      let next = 0;
+      next++;
+      protobuf.writeStringField(next, genesis);
+
+      next++;
+      protobuf.writePackedBoolean(next, booleans);
+
+      next++;
+      protobuf.writePackedDouble(next, doubles);
+
+      next++;
+      protobuf.writePackedSVarint(next, integers);
+
+      next++
+      debug('starting @', next);
+      for (next; next <= 5; next++) {
+        debug('writing @', next);
+      };
+      debug('ended @', next - 1, 'next will be', next);
+
+      let buffer = protobuf.finish();
+      debug('final buffer length:', buffer.length);
+      resolve(buffer);
     });
   }
   static fromBuffer () {

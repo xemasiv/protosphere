@@ -17,5 +17,5 @@ let object1 = {
   },
 };
 Protosphere.fromObject(object1)
-  .then(console.log)
-  .then(console.error);
+  .then((buffer) => console.log(buffer.length))
+  .catch(console.error);
