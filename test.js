@@ -1,12 +1,14 @@
 let Protosphere = require('./index.js');
+let long = require('long');
 Protosphere.enableDebug();
 
 let object1 = {
-  name: 'xemasiv',
-  sampleInt: 23,
-  sampleDouble: 23.123123,
-  sampleArray: [ 1, 2, 3 ],
-  sampleObject: {
+  testString: 'xemasiv',
+  testInt: 23,
+  testDouble: 23.123123,
+  testLong: long.fromString('9223372036854775807'),
+  testArray: [ 1, 2, 3 ],
+  testObject: {
     key1: '1',
     key2: 2
   },

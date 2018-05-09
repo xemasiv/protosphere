@@ -1,4 +1,5 @@
 const pbf = require('pbf');
+const long = require('long');
 const debug = require('debug')('Protosphere');
 let errors = [
   'Invalid parameter received.'
@@ -28,6 +29,9 @@ const classify = (subject) => {
       switch (subject.__proto__) {
         case undefined:
           return undefined;
+          break;
+        case long.prototype:
+          return 'long';
           break;
         case Object.prototype:
           return 'object';
@@ -128,7 +132,7 @@ Number(Varint)
 Notes:
 
 writePackedSFixed32 readPackedSFixed32    -2147483648  2147483647
-writePackedFixed32 readPackedFixed32      0            4294967295
+writePackedFixed32  readPackedFixed32      0            4294967295
 
 */
 class Protosphere {
