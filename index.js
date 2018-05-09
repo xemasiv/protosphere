@@ -25,6 +25,9 @@ const classify = (subject) => {
     case 'object':
       if (subject === null) return 'null';
       switch (subject.__proto__) {
+        case undefined:
+          return undefined;
+          break;
         case Object.prototype:
           return 'object';
           break;
@@ -119,9 +122,7 @@ const classify = (subject) => {
 class Protosphere {
   static fromObject (parameter) {
     return new Promise((resolve, reject) => {
-      if (typeof parameter !== 'object') reject(errors[0]);
-      if (typeof parameter.__proto__ === 'undefined') reject(errors[0]);
-      if (parameter.__proto__ !== Object.prototype) reject(errors[0]);
+      if (classify(parameter) !== 'object') reject(errors[0]);
       debug(Object.keys(parameter));
       Object.keys(parameter).map((key) => {
         let val = parameter[key];
