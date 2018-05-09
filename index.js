@@ -275,17 +275,25 @@ class Protosphere {
 
       let protobuf = new pbf();
       let next = 0;
-      next++;
-      protobuf.writeStringField(next, genesis);
 
       next++;
-      protobuf.writePackedBoolean(next, booleans);
+      protobuf.writeStringField(next, genesis)
 
-      next++;
-      protobuf.writePackedDouble(next, doubles);
+      if (booleans.length) {
+        next++;
+        protobuf.writePackedBoolean(next, booleans);
+      };
 
-      next++;
-      protobuf.writePackedSVarint(next, integers);
+      if (doubles.length) {
+        next++;
+        protobuf.writePackedDouble(next, doubles);
+      };
+
+      if (integers.length) {
+        next++;
+        protobuf.writePackedSVarint(next, integers);
+      };
+
 
       next++
       debug('starting @', next);
