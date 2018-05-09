@@ -3,6 +3,8 @@ let long = require('long');
 Protosphere.enableDebug();
 
 let object1 = {
+  testBool1: true,
+  testBool2: false,
   testString: 'xemasiv',
   testInt: 23,
   testDouble: 23.123123,

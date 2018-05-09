@@ -141,13 +141,28 @@ writePackedFixed32  readPackedFixed32      0            4294967295
       999999999999999
       999999999999999
 */
+const concat = (...args) => {
+  let str = '';
+  args.map((arg, index) => str = str.concat(String(arg)));
+  return str;
+};
+const VALUE_TYPES = {
+  BOOLEAN: 1,
+  DOUBLE: 2,
+  INTEGER: 3,
+  STRING: 4,
+  BYTES: 5,
+  ARRAY_START: 6,
+  ARRAY_END: 7,
+  OBJECT_START: 8,
+  OBJECT_END: 9
+};
 class Protosphere {
   static fromObject (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
 
       let protobuf = new pbf();
-      let genesis = '';
       // tag === 1, genesis
 
       // destructure genesis
@@ -188,6 +203,13 @@ class Protosphere {
         //    --> ], if array end
         //    --> {, if object start
         //    --> }, if object end
+      const genesis = [];
+      const booleans = [];
+      const doubles = [];
+      const integers = [];
+      const strings = [];
+      const bytes = [];
+
 
       const traverse = (obj) => {
         debug(Object.keys(obj));
@@ -195,9 +217,15 @@ class Protosphere {
           let val = obj[key];
           debug(key, val, classify(val));
           switch (classify(val)) {
-            case 'string':
+            case 'boolean':
+              if (booleans.includes(val) === false) booleans.push(val);
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
               break;
             case 'double':
+              if (doubles.includes(val) === false) doubles.push(val);
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
               break;
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
@@ -206,19 +234,36 @@ class Protosphere {
                 warn('raw >= 50 bit integer found.');
                 warn('unsafe, please wrap with long.js, we support it.');
               }
+              if (integers.includes(val) === false) integers.push(val);
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
               break;
-            case 'boolean':
+            case 'string':
+              if (strings.includes(val) === false) strings.push(val);
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
               break;
             case 'array':
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
               break;
             case 'object':
+              if (strings.includes(key) === false) strings.push(key);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
               traverse(val);
+              genesis.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
               break;
           }
-
         });
       };
       traverse(parameter);
+      debug('genesis:', genesis);
+      debug('booleans:', booleans);
+      debug('doubles:', doubles);
+      debug('integers:', integers);
+      debug('strings:', strings);
+      debug('bytes:', bytes);
       debug('OBJECT ok');
     });
   }
