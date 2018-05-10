@@ -175,7 +175,7 @@ class BooleanSchema {
 class Protosphere {
   static disect (schema, values) {
     schema = sortObject(schema);
-    debug(schema);
+    inspect(schema);
     // on transform, we push() to arrays,
     // on hydrate, we shift() from arrays
     const strings = [];
@@ -187,7 +187,6 @@ class Protosphere {
         if (s.type !== classify(v)) {
           debug('schema mismatch', s, v);
         } else {
-          debug('schema match');
           switch (s.type) {
             case 'boolean':
               booleans.push(v);

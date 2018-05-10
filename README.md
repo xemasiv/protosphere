@@ -1,11 +1,16 @@
 # protosphere
 :clap: PROTOCOL :clap: BUFFERS :clap: MADE :clap: EASY :clap:
 
+![](https://cdn.dribbble.com/users/253615/screenshots/4262872/planet-_shot-03_1x.png)
+
+> Art by Nick DePasquale
+
+> https://dribbble.com/shots/4262872-Space-and-Planets
+
 ## Changelog
 
 * v3.x
-  * Playground shows no performance gain, should refactor again.
-    * Fuck this shit.
+  * Playground shows very minimal gain, for refactor.
   * Dropped support for >= 50-bit varints
   * Flattened reference tree for smaller footprint
   * Support for null values
@@ -23,12 +28,6 @@
   * Barely functional
 * v0.x
   * PoC Testing
-
-## v4 Todo:
-
-* Joi-like Schemas
-  * `_(obj2).toPairs().sortBy(0).fromPairs().value()``
-  * https://github.com/lodash/lodash/issues/1459#issuecomment-253969771
 
 ## Usage
 

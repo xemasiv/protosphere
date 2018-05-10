@@ -77,10 +77,8 @@ let values = {
   name: 'Xemasiv',
   details: {
     verified: true
-  }
+  },
+  sampleNull: null
 };
 
-let debug = (...parameters) => parameters.map((parameter) => {
-  console.dir(parameter, { depth:null, colors: true })
-});
 Protosphere.disect(schema, values);
