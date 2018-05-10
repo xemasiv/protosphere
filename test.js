@@ -58,6 +58,12 @@ let object1 = {
       [6,7,8,9],
       [12, 3213, {hi: 'hello!'}, undefined, null, NaN, Infinity]
     ]
+  ],
+  arrayWithObjects: [
+    { name: 'xema', surname: 'siv'},
+    { name: 'xema', surname: 'siv'},
+    { name: 'xema', surname: 'siv'},
+    { name: 'xema', surname: 'siv'}
   ]
 };
 Protosphere.obj2buff(object1)

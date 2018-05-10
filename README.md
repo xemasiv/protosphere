@@ -4,6 +4,8 @@
 ## Changelog
 
 * v3.x
+  * Playground shows no performance gain, should refactor again.
+    * Fuck this shit.
   * Dropped support for >= 50-bit varints
   * Flattened reference tree for smaller footprint
   * Support for null values

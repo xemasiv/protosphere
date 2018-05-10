@@ -1,12 +1,13 @@
 {
   "name": "protosphere",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "protocol buffers made easy",
   "main": "index.js",
   "scripts": {
     "test": "node test.js",
     "build": "webpack --display-error-details",
-    "watch": "webpack --watch --display-error-details"
+    "watch": "webpack --watch --display-error-details",
+    "playground": "node playground/index.js"
   },
   "repository": {
     "type": "git",
@@ -29,12 +30,18 @@
   },
   "homepage": "https://github.com/xemasiv/protosphere#readme",
   "dependencies": {
+    "compression": "^1.7.2",
     "pbf": "^3.1.0"
   },
   "devDependencies": {
+    "axios": "^0.18.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
     "babel-preset-env": "^1.6.1",
+    "buffer": "^5.1.0",
+    "datastore2": "^3.0.0",
+    "express": "^4.16.3",
+    "typedarray-to-buffer": "^3.1.5",
     "webpack": "^4.8.1",
     "webpack-cli": "^2.1.3"
   }
