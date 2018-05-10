@@ -277,30 +277,43 @@ class Protosphere {
       let next = 0;
 
       next++;
+      debug('writing @', next);
       protobuf.writeStringField(next, genesis)
 
       if (booleans.length) {
         next++;
+        debug('writing booleans @', next);
         protobuf.writePackedBoolean(next, booleans);
       };
 
       if (doubles.length) {
         next++;
+        debug('writing doubles @', next);
         protobuf.writePackedDouble(next, doubles);
       };
 
       if (integers.length) {
         next++;
+        debug('writing svarints @', next);
         protobuf.writePackedSVarint(next, integers);
       };
 
-
-      next++
-      debug('starting @', next);
-      for (next; next <= 5; next++) {
-        debug('writing @', next);
+      if (strings.length) {
+        for (var i = 0; i <= strings.length - 1; i++) {
+          next++
+          debug('writing strings @', next);
+          protobuf.writeStringField(next, strings[i]);
+        }
+        debug('ended @', next - 1, 'next will be', next);
       };
-      debug('ended @', next - 1, 'next will be', next);
+      if (bytes.length) {
+        for (var i = 0; i <= bytes.length - 1; i++) {
+          next++
+          debug('writing bytes @', next);
+          protobuf.writeBytesField(next, bytes[i]);
+        }
+        debug('ended @', next - 1, 'next will be', next);
+      };
 
       let buffer = protobuf.finish();
       debug('final buffer length:', buffer.length);
