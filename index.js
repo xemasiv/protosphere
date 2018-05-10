@@ -163,7 +163,7 @@ class DoubleSchema {
 class ObjectSchema {
   constructor (contents) {
     this.type = 'object';
-    this.contents = contents;
+    this.contents = sortObject(contents);
   }
 }
 class BooleanSchema {
