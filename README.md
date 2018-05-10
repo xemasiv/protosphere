@@ -24,6 +24,12 @@
 * v0.x
   * PoC Testing
 
+## v4 Todo:
+
+* Joi-like Schemas
+  * `_(obj2).toPairs().sortBy(0).fromPairs().value()``
+  * https://github.com/lodash/lodash/issues/1459#issuecomment-253969771
+
 ## Usage
 
 #### Installing
