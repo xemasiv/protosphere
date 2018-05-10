@@ -326,7 +326,7 @@ class Protosphere {
   }
   static fromBuffer (buffer) {
     return new Promise((resolve, reject) => {
-      let genesis,
+      let genesis, references,
       switches, overhead,
       booleans, doubles, integers,
       strings, bytes,
@@ -337,9 +337,18 @@ class Protosphere {
         if (tag === 1) {
           genesis = pbf.readString().split(' ');
           switches = genesis[0].split('').map((x) => parseInt(x));
-          referenceCount = genesis[1];
-          stringCount = genesis[2];
-          byteCount = genesis[3];
+          referenceCount = parseInt(genesis[1]);
+          if (referenceCount > 0) {
+            references = [];
+          }
+          stringCount = parseInt(genesis[2]);
+          if (stringCount > 0) {
+            strings = [];
+          }
+          byteCount = parseInt(genesis[3]);
+          if (byteCount > 0) {
+            bytes = [];
+          }
           overhead = 0;
           if (switches[0]) {
             overhead++;
@@ -366,6 +375,9 @@ class Protosphere {
           hasBytes = switches[4] ? true : false;
           debug('genesis:', genesis);
           debug('switches:', switches);
+          debug('referenceCount:', referenceCount);
+          debug('stringCount:', stringCount);
+          debug('byteCount:', byteCount);
           debug('overhead:', overhead);
         } else {
           debug('tag:', tag);
@@ -376,7 +388,21 @@ class Protosphere {
             handler(pbf);
             return;
           } else {
-
+            debug('tag:', tag);
+            if (tag <= (1 + overhead + referenceCount)) {
+              debug('destructuring reference @', tag);
+              references.push(pbf.readPackedSVarint());
+            } else {
+              if (tag <= (1 + overhead + referenceCount + stringCount)) {
+                debug('destructuring string @', tag);
+                strings.push(pbf.readString());
+              } else {
+                if (tag <= (1 + overhead + referenceCount + stringCount + byteCount)) {
+                  debug('destructuring byte @', tag);
+                  strings.push(pbf.readBytes());
+                }
+              }
+            }
           }
         }
       }
@@ -384,6 +410,8 @@ class Protosphere {
       debug('booleans:', booleans);
       debug('doubles:', doubles);
       debug('integers:', integers);
+      debug('references:', references);
+      debug('strings:', strings);
       debug(data);
     });
   }
