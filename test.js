@@ -66,10 +66,21 @@ let object1 = {
     { name: 'xema', surname: 'siv'}
   ]
 };
-Protosphere.obj2buff(object1)
-  .then((buffer) => {
-    console.log('LENGTH:', buffer.length);
-    return Protosphere.buff2obj(buffer);
+
+let schema = {
+  name: Protosphere.String(),
+  details: Protosphere.Object({
+    verified: Protosphere.Boolean()
   })
-  .then((finalObject) => console.log('RESULT:', util.inspect(finalObject, false, null)))
-  .catch(console.error);
+};
+let values = {
+  name: 'Xemasiv',
+  details: {
+    verified: true
+  }
+};
+
+let debug = (...parameters) => parameters.map((parameter) => {
+  console.dir(parameter, { depth:null, colors: true })
+});
+Protosphere.disect(schema, values);

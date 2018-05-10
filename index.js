@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const pbf = require('pbf');
 const warn = console.warn;
 const errors = [ 'Invalid parameter received.' ];
@@ -132,6 +133,88 @@ const groupBy = (arr, n) => {
   }
   return arr2;
 };
+let debug = (...parameters) => parameters.map((parameter) => {
+  console.dir(parameter, { depth:null, colors: true })
+})
+class StringSchema {
+  constructor () {
+    this.type = 'string';
+  }
+}
+class IntegerSchema {
+  constructor () {
+    this.type = 'integer';
+  }
+}
+class DoubleSchema {
+  constructor () {
+    this.type = 'double';
+  }
+}
+class ObjectSchema {
+  constructor (contents) {
+    this.type = 'object';
+    this.contents = contents;
+  }
+}
+class BooleanSchema {
+  constructor () {
+    this.type = 'boolean';
+  }
+}
+class Protosphere {
+  static disect (schema, values) {
+    schema = _(schema).toPairs().sortBy(0).fromPairs().value();
+    debug(schema);
+    debug(_.keys(schema));
+    // on transform, we push() to arrays,
+    // on hydrate, we shift() from arrays
+    const strings = [];
+    const booleans = [];
+    const traverse = (schema, values) => {
+      _.keys(schema).map((key) => {
+        let s = schema[key];
+        let v = values[key];
+        debug('schema requires:', s);
+        debug('entered value:', v);
+        if (s.type !== classify(v)) {
+          debug('failed');
+        } else {
+          debug('passed');
+          switch (s.type) {
+            case 'boolean':
+              booleans.push(v);
+              break;
+            case 'string':
+              strings.push(v);
+              break;
+            case 'object':
+              traverse(s.contents, v);
+              break;
+          }
+        }
+      });
+    };
+    traverse(schema, values);
+    debug(strings);
+    debug(booleans);
+  }
+  static String () {
+    return new StringSchema();
+  }
+  static Integer () {
+    return new IntegerSchema();
+  }
+  static Double () {
+    return new DoubleSchema();
+  }
+  static Object (contents) {
+    return new ObjectSchema(contents);
+  }
+  static Boolean () {
+    return new BooleanSchema();
+  }
+}
 const VALUE_TYPES = {
   BOOLEAN_IN_ARRAY: 1,
   BOOLEAN_IN_OBJECT: 2,
@@ -176,7 +259,7 @@ const VALUE_TYPES = {
   OBJECT_START: 32,
   OBJECT_END: 33
 };
-class Protosphere {
+class Protosphere2 {
   static obj2buff (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
