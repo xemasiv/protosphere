@@ -1,0 +1,11 @@
+{
+  "presets": [
+    ["env", {
+      "targets": {
+        "chrome": 23,
+        "firefox": 22,
+        "edge": 15
+      }
+    }]
+  ]
+}

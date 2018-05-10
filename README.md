@@ -1,6 +1,17 @@
 # protosphere
 :clap: PROTOCOL :clap: BUFFERS :clap: MADE :clap: EASY :clap:
 
+## Changelog
+
+* v2.x
+  * Added dist builds:
+    * `protosphere.min.js`
+    * `protosphere.core.min.js`
+* v1.x
+  * Fully functional
+* v0.x
+  * Testing
+
 ## Usage
 
 ```
@@ -26,6 +37,8 @@ static function `.buff2obj(buffer)`
 * Returns
   * Promise.resolve(`object`)
   * Promise.reject(`string`)
+
+
 
 ## License
 

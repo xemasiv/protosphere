@@ -1,10 +1,12 @@
 {
   "name": "protosphere",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "protocol buffers made easy",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js",
+    "build": "webpack --display-error-details",
+    "watch": "webpack --watch --display-error-details"
   },
   "repository": {
     "type": "git",
@@ -30,5 +32,12 @@
     "debug": "^3.1.0",
     "long": "^4.0.0",
     "pbf": "^3.1.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.4",
+    "babel-preset-env": "^1.6.1",
+    "webpack": "^4.8.1",
+    "webpack-cli": "^2.1.3"
   }
 }
