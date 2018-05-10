@@ -1,7 +1,31 @@
 # protosphere
 :clap: PROTOCOL :clap: BUFFERS :clap: MADE :clap: EASY :clap:
 
+## Usage
+
+```
+npm install protosphere --save
+yarn add protosphere
+```
+```
+const Protosphere = require('protosphere');
+```
+
 ## class `Protosphere`
+
+static function `.obj2buff(object)`
+* Takes
+  * `object`
+* Returns
+  * Promise.resolve(`buffer`)
+  * Promise.reject(`string`)
+
+static function `.buff2obj(buffer)`
+* Takes
+  * `buffer`
+* Returns
+  * Promise.resolve(`object`)
+  * Promise.reject(`string`)
 
 ## License
 

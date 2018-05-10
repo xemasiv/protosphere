@@ -158,7 +158,7 @@ const VALUE_TYPES = {
   OBJECT_END: 8
 };
 class Protosphere {
-  static fromObject (parameter) {
+  static obj2buff (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
       debug('OBJECT ok');
@@ -324,7 +324,7 @@ class Protosphere {
       resolve(buffer);
     });
   }
-  static fromBuffer (buffer) {
+  static buff2obj (buffer) {
     return new Promise((resolve, reject) => {
       let genesis, references,
       switches, overhead,

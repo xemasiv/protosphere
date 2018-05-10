@@ -16,10 +16,10 @@ let object1 = {
     key2: 2
   },
 };
-Protosphere.fromObject(object1)
+Protosphere.obj2buff(object1)
   .then((buffer) => {
     console.log('length:', buffer.length);
-    return Protosphere.fromBuffer(buffer);
+    return Protosphere.buff2obj(buffer);
   })
   .then((finalObject) => console.log(finalObject))
   .catch(console.error);
