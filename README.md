@@ -3,6 +3,8 @@
 
 ## Changelog
 
+* v3.x
+  * Dropped support for >= 50-bit varints
 * v2.x
   * Added dist builds:
     * `protosphere.min.js`

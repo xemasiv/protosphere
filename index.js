@@ -1,5 +1,4 @@
 const pbf = require('pbf');
-const long = require('long');
 const debug = require('debug')('Protosphere');
 const warn = require('debug')('Protosphere warning');
 warn.enabled = true;
@@ -31,9 +30,6 @@ const classify = (subject) => {
       switch (subject.__proto__) {
         case undefined:
           return undefined;
-          break;
-        case long.prototype:
-          return 'long';
           break;
         case Object.prototype:
           return 'object';
@@ -146,6 +142,15 @@ const concat = (...args) => {
   args.map((arg, index) => str = str.concat(String(arg)));
   return str;
 };
+const groupBy = (arr, n) => {
+	var arr2 = [];
+  for (var i = 0, j = 0; i < arr.length; i++) {
+    if (i >= n && i % n === 0) j++;
+    arr2[j] = arr2[j] || [];
+    arr2[j].push(arr[i])
+  }
+  return arr2;
+};
 const VALUE_TYPES = {
   BOOLEAN: 0,
   DOUBLE: 1,
@@ -208,7 +213,7 @@ class Protosphere {
       const integers = [];
       const strings = [];
       const bytes = [];
-      const traverse = (obj) => {
+      const traverse = (obj, depth) => {
         debug(Object.keys(obj));
         Object.keys(obj).map((key) => {
           let val = obj[key];
@@ -217,50 +222,50 @@ class Protosphere {
             case 'boolean':
               if (booleans.includes(val) === false) booleans.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
+              references.push(strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val));
               break;
             case 'double':
               if (doubles.includes(val) === false) doubles.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
+              references.push(strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val));
               break;
             case 'integer':
-              if (long.fromNumber(val).getNumBitsAbs() >= 50) {
+              if (Math.abs(val) >= Math.pow(2, 50) -1) {
                 warn('@ key', key, '@ val', val);
-                warn('raw >= 50-bit int currently unsafe w/o `long` support.');
+                warn('raw >= 50-bit int is currently unsafe.');
               }
               if (integers.includes(val) === false) integers.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
+              references.push(strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val));
               break;
             case 'string':
               if (strings.includes(val) === false) strings.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.STRING, strings.indexOf(val)]);
+              references.push(strings.indexOf(key), VALUE_TYPES.STRING, strings.indexOf(val));
               break;
             case 'array':
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
-              traverse(val);
-              references.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
+              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_START, depth);
+              traverse(val, depth + 1);
+              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_END, depth);
               break;
             case 'object':
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
-              traverse(val);
-              references.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
+              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_START, depth);
+              traverse(val, depth + 1);
+              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_END, depth);
               break;
           }
         });
       };
-      traverse(parameter);
+      traverse(parameter, 1);
       let genesis = concat(
+        references.length ? 1 : 0,
         booleans.length ? 1 : 0,
         doubles.length ? 1 : 0,
         integers.length ? 1 : 0,
         strings.length ? 1 : 0,
         bytes.length ? 1 : 0,
-        ' ', references.length,
         ' ', strings.length,
         ' ', bytes.length
       );
@@ -277,8 +282,12 @@ class Protosphere {
       let next = 0;
 
       next++;
-      debug('writing @', next);
+      debug('writing genesis @', next);
       protobuf.writeStringField(next, genesis)
+
+      next++;
+      debug('writing references @', next);
+      protobuf.writePackedSVarint(next, references)
 
       if (booleans.length) {
         next++;
@@ -296,13 +305,6 @@ class Protosphere {
         next++;
         debug('writing svarints @', next);
         protobuf.writePackedSVarint(next, integers);
-      };
-      if (references.length) {
-        for (var i = 0; i <= references.length - 1; i++) {
-          next++
-          debug('writing references @', next);
-          protobuf.writePackedSVarint(next, references[i]);
-        }
       };
       if (strings.length) {
         for (var i = 0; i <= strings.length - 1; i++) {
@@ -337,45 +339,47 @@ class Protosphere {
         if (tag === 1) {
           genesis = pbf.readString().split(' ');
           switches = genesis[0].split('').map((x) => parseInt(x));
-          referenceCount = parseInt(genesis[1]);
-          if (referenceCount > 0) {
-            references = [];
-          }
-          stringCount = parseInt(genesis[2]);
+          stringCount = parseInt(genesis[1]);
           if (stringCount > 0) {
             strings = [];
           }
-          byteCount = parseInt(genesis[3]);
+          byteCount = parseInt(genesis[2]);
           if (byteCount > 0) {
             bytes = [];
           }
           overhead = 0;
           if (switches[0]) {
             overhead++;
+            debug('pushing references handler');
+            handlers.push((pbf) => {
+              references = pbf.readPackedSVarint();
+            });
+          }
+          if (switches[1]) {
+            overhead++;
             debug('pushing booleans handler');
             handlers.push((pbf) => {
               booleans = pbf.readPackedBoolean();
             });
           }
-          if (switches[1]) {
+          if (switches[2]) {
             overhead++;
             debug('pushing doubles handler');
             handlers.push((pbf) => {
               doubles = pbf.readPackedDouble();
             });
           }
-          if (switches[2]) {
+          if (switches[3]) {
             overhead++;
             debug('pushing integers handler');
             handlers.push((pbf) => {
               integers = pbf.readPackedSVarint();
             });
           }
-          hasStrings = switches[3] ? true : false;
-          hasBytes = switches[4] ? true : false;
+          hasStrings = switches[4] ? true : false;
+          hasBytes = switches[5] ? true : false;
           debug('genesis:', genesis);
           debug('switches:', switches);
-          debug('referenceCount:', referenceCount);
           debug('stringCount:', stringCount);
           debug('byteCount:', byteCount);
           debug('overhead:', overhead);
@@ -389,18 +393,13 @@ class Protosphere {
             return;
           } else {
             debug('tag:', tag);
-            if (tag <= (1 + overhead + referenceCount)) {
-              debug('destructuring reference @', tag);
-              references.push(pbf.readPackedSVarint());
+            if (tag <= (1 + overhead + stringCount)) {
+              debug('destructuring string @', tag);
+              strings.push(pbf.readString());
             } else {
-              if (tag <= (1 + overhead + referenceCount + stringCount)) {
-                debug('destructuring string @', tag);
-                strings.push(pbf.readString());
-              } else {
-                if (tag <= (1 + overhead + referenceCount + stringCount + byteCount)) {
-                  debug('destructuring byte @', tag);
-                  strings.push(pbf.readBytes());
-                }
+              if (tag <= (1 + overhead + stringCount + byteCount)) {
+                debug('destructuring byte @', tag);
+                strings.push(pbf.readBytes());
               }
             }
           }
@@ -413,75 +412,96 @@ class Protosphere {
       debug('references:', references);
       debug('strings:', strings);
       debug('bytes:', bytes);
+      references = groupBy(references, 3);
+      debug('grouped references:', references);
       let returnObject = {};
-      let inArray = false;
-      let tempArray;
-      let inObject = false;
-      let tempObject;
+      let tempArrays = [];
+      let tempObjects = [];
       references.map((reference) => {
         switch (reference[1]) {
           case VALUE_TYPES.BOOLEAN:
-            if (inArray) {
-              tempArray.push(booleans[reference[2]]);
-            } else if (inObject) {
-              tempObject[strings[reference[0]]] = booleans[reference[2]];
-            } else {
-              returnObject[strings[reference[0]]] = booleans[reference[2]];
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(booleans[reference[2]]);
+              return;
             }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = booleans[reference[2]];
+              return;
+            }
+            returnObject[strings[reference[0]]] = booleans[reference[2]];
             break;
           case VALUE_TYPES.DOUBLE:
-            if (inArray) {
-              tempArray.push(doubles[reference[2]]);
-            } else if (inObject) {
-              tempObject[strings[reference[0]]] = doubles[reference[2]];
-            } else {
-              returnObject[strings[reference[0]]] = doubles[reference[2]];
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(doubles[reference[2]]);
+              return;
             }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = doubles[reference[2]];
+              return;
+            }
+            returnObject[strings[reference[0]]] = doubles[reference[2]];
             break;
           case VALUE_TYPES.INTEGER:
-            if (inArray) {
-              tempArray.push(integers[reference[2]]);
-            } else if (inObject) {
-              tempObject[strings[reference[0]]] = integers[reference[2]];
-            } else {
-              returnObject[strings[reference[0]]] = integers[reference[2]];
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(integers[reference[2]]);
+              return;
             }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = integers[reference[2]];
+              return;
+            }
+            returnObject[strings[reference[0]]] = integers[reference[2]];
             break;
           case VALUE_TYPES.STRING:
-            if (inArray) {
-              tempArray.push(strings[reference[2]]);
-            } else if (inObject) {
-              tempObject[strings[reference[0]]] = strings[reference[2]];
-            } else {
-              returnObject[strings[reference[0]]] = strings[reference[2]];
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(strings[reference[2]]);
+              return;
             }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = strings[reference[2]];
+              return;
+            }
+            returnObject[strings[reference[0]]] = strings[reference[2]];
             break;
           case VALUE_TYPES.BYTES:
-            if (inArray) {
-              tempArray.push(bytes[reference[2]]);
-            } else if (inObject) {
-              tempObject[strings[reference[0]]] = bytes[reference[2]];
-            } else {
-              returnObject[strings[reference[0]]] = bytes[reference[2]];
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(bytes[reference[2]]);
+              return;
             }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = bytes[reference[2]];
+              return;
+            }
+            returnObject[strings[reference[0]]] = bytes[reference[2]];
             break;
           case VALUE_TYPES.ARRAY_START:
-            tempArray = [];
-            inArray = true;
+            tempArrays.push([]);
             break;
           case VALUE_TYPES.ARRAY_END:
-            returnObject[strings[reference[0]]] = tempArray;
-            tempArray = undefined;
-            inArray = false;
+            if (tempArrays.length >= 2) {
+              tempArrays[tempArrays.length - 2][strings[reference[0]]] = tempArrays[tempArrays.length - 1];
+              tempArrays.splice(-1, 1);
+              return;
+            }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = tempArrays[tempArrays.length - 1];
+              tempArrays.splice(-1, 1);
+              return;
+            }
+            returnObject[strings[reference[0]]] = tempArrays[tempArrays.length - 1];
+            tempArrays.splice(-1, 1);
             break;
           case VALUE_TYPES.OBJECT_START:
-            tempObject = {};
-            inObject = true;
+            tempObjects.push({});
             break;
           case VALUE_TYPES.OBJECT_END:
-            returnObject[strings[reference[0]]] = tempObject;
-            tempObject = undefined;
-            inObject = false;
+            if (tempObjects.length >= 2) {
+              tempObjects[tempObjects.length - 2][strings[reference[0]]] = tempObjects[tempObjects.length - 1];
+              tempObjects.splice(-1, 1);
+              return;
+            }
+            returnObject[strings[reference[0]]] = tempObjects[tempObjects.length - 1];
+            tempObjects.splice(-1, 1);
             break;
         }
       });

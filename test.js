@@ -1,6 +1,6 @@
 let Protosphere = require('./index.js');
 let long = require('long');
-// Protosphere.enableDebug();
+Protosphere.enableDebug();
 
 let object1 = {
   testEmptyArray: [],
@@ -16,6 +16,15 @@ let object1 = {
     key1: '1',
     key2: 2
   },
+  testNestedArray: [
+    [1,2,3],
+    [1,2,3]
+  ],
+  testNestedObject: {
+    nest1: {
+      hi: 'hello!'
+    }
+  }
 };
 Protosphere.obj2buff(object1)
   .then((buffer) => {
