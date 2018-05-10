@@ -147,15 +147,15 @@ const concat = (...args) => {
   return str;
 };
 const VALUE_TYPES = {
-  BOOLEAN: 1,
-  DOUBLE: 2,
-  INTEGER: 3,
-  STRING: 4,
-  BYTES: 5,
-  ARRAY_START: 6,
-  ARRAY_END: 7,
-  OBJECT_START: 8,
-  OBJECT_END: 9
+  BOOLEAN: 0,
+  DOUBLE: 1,
+  INTEGER: 2,
+  STRING: 3,
+  BYTES: 4,
+  ARRAY_START: 5,
+  ARRAY_END: 6,
+  OBJECT_START: 7,
+  OBJECT_END: 8
 };
 class Protosphere {
   static fromObject (parameter) {
@@ -227,7 +227,7 @@ class Protosphere {
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
                 warn('@ key', key, '@ val', val);
-                warn('raw >= 50 bit int currently unsafe w/o long.js support.');
+                warn('raw >= 50-bit int currently unsafe w/o `long` support.');
               }
               if (integers.includes(val) === false) integers.push(val);
               if (strings.includes(key) === false) strings.push(key);
@@ -236,7 +236,7 @@ class Protosphere {
             case 'string':
               if (strings.includes(val) === false) strings.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              references.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
+              references.push([strings.indexOf(key), VALUE_TYPES.STRING, strings.indexOf(val)]);
               break;
             case 'array':
               if (strings.includes(key) === false) strings.push(key);
@@ -406,13 +406,87 @@ class Protosphere {
           }
         }
       }
-      let data = new pbf(buffer).readFields(reader, {});
+      new pbf(buffer).readFields(reader);
       debug('booleans:', booleans);
       debug('doubles:', doubles);
       debug('integers:', integers);
       debug('references:', references);
       debug('strings:', strings);
-      debug(data);
+      debug('bytes:', bytes);
+      let returnObject = {};
+      let inArray = false;
+      let tempArray;
+      let inObject = false;
+      let tempObject;
+      references.map((reference) => {
+        switch (reference[1]) {
+          case VALUE_TYPES.BOOLEAN:
+            if (inArray) {
+              tempArray.push(booleans[reference[2]]);
+            } else if (inObject) {
+              tempObject[strings[reference[0]]] = booleans[reference[2]];
+            } else {
+              returnObject[strings[reference[0]]] = booleans[reference[2]];
+            }
+            break;
+          case VALUE_TYPES.DOUBLE:
+            if (inArray) {
+              tempArray.push(doubles[reference[2]]);
+            } else if (inObject) {
+              tempObject[strings[reference[0]]] = doubles[reference[2]];
+            } else {
+              returnObject[strings[reference[0]]] = doubles[reference[2]];
+            }
+            break;
+          case VALUE_TYPES.INTEGER:
+            if (inArray) {
+              tempArray.push(integers[reference[2]]);
+            } else if (inObject) {
+              tempObject[strings[reference[0]]] = integers[reference[2]];
+            } else {
+              returnObject[strings[reference[0]]] = integers[reference[2]];
+            }
+            break;
+          case VALUE_TYPES.STRING:
+            if (inArray) {
+              tempArray.push(strings[reference[2]]);
+            } else if (inObject) {
+              tempObject[strings[reference[0]]] = strings[reference[2]];
+            } else {
+              returnObject[strings[reference[0]]] = strings[reference[2]];
+            }
+            break;
+          case VALUE_TYPES.BYTES:
+            if (inArray) {
+              tempArray.push(bytes[reference[2]]);
+            } else if (inObject) {
+              tempObject[strings[reference[0]]] = bytes[reference[2]];
+            } else {
+              returnObject[strings[reference[0]]] = bytes[reference[2]];
+            }
+            break;
+          case VALUE_TYPES.ARRAY_START:
+            tempArray = [];
+            inArray = true;
+            break;
+          case VALUE_TYPES.ARRAY_END:
+            returnObject[strings[reference[0]]] = tempArray;
+            tempArray = undefined;
+            inArray = false;
+            break;
+          case VALUE_TYPES.OBJECT_START:
+            tempObject = {};
+            inObject = true;
+            break;
+          case VALUE_TYPES.OBJECT_END:
+            returnObject[strings[reference[0]]] = tempObject;
+            tempObject = undefined;
+            inObject = false;
+            break;
+        }
+      });
+      debug(returnObject);
+      resolve(returnObject);
     });
   }
   static enableDebug () {

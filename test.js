@@ -1,6 +1,6 @@
 let Protosphere = require('./index.js');
 let long = require('long');
-Protosphere.enableDebug();
+// Protosphere.enableDebug();
 
 let object1 = {
   testBool1: true,
@@ -17,6 +17,9 @@ let object1 = {
   },
 };
 Protosphere.fromObject(object1)
-  .then((buffer) => Protosphere.fromBuffer(buffer))
+  .then((buffer) => {
+    console.log('length:', buffer.length);
+    return Protosphere.fromBuffer(buffer);
+  })
   .then((finalObject) => console.log(finalObject))
   .catch(console.error);

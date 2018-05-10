@@ -1,5 +1,7 @@
 # protosphere
-:clap: protocol :clap: buffers :clap: made :clap: easy :clap:
+:clap: PROTOCOL :clap: BUFFERS :clap: MADE :clap: EASY :clap:
+
+## class `Protosphere`
 
 ## License
 
