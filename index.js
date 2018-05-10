@@ -1,10 +1,6 @@
 const pbf = require('pbf');
-const debug = require('debug')('Protosphere');
-const warn = require('debug')('Protosphere warning');
-warn.enabled = true;
-let errors = [
-  'Invalid parameter received.'
-];
+const warn = console.warn;
+const errors = [ 'Invalid parameter received.' ];
 const classify = (subject) => {
   switch (typeof subject) {
     case 'string':
@@ -122,21 +118,6 @@ const classify = (subject) => {
       break;
   }
 };
-/*
-Supported types:
-String
-Number(Varint)
-
-Notes:
-6553565535
-2147483647
-writePackedSFixed32 readPackedSFixed32    -2147483648  2147483647
-writePackedFixed32  readPackedFixed32      0            4294967295
-9007199254740991
-      4294967295
-      999999999999999
-      999999999999999
-*/
 const concat = (...args) => {
   let str = '';
   args.map((arg, index) => str = str.concat(String(arg)));
@@ -160,65 +141,45 @@ const VALUE_TYPES = {
   ARRAY_START: 5,
   ARRAY_END: 6,
   OBJECT_START: 7,
-  OBJECT_END: 8
+  OBJECT_END: 8,
+  PARENT_IS_OBJECT: -1,
+  PARENT_IS_ARRAY: -2,
+  NULL: -3,
+  UNDEFINED: -4,
+  NAN: -5,
+  INFINITY: -6
 };
 class Protosphere {
   static obj2buff (parameter) {
     return new Promise((resolve, reject) => {
       if (classify(parameter) !== 'object') reject(errors[0]);
-      debug('OBJECT ok');
-      // tag === 1, genesis
 
-      // destructure genesis
-      // genesis = genesis.split(' ');
-
-      // hasBooleans = false
-      // hasDoubles = false
-      // hasVarints = false
-      // hasBooleans = false
-
-      // hasStrings = false
-      // hasBytes = false
-
-      // stringStart = 2;
-      // stringEnd = 0;
-      // byteStart = 2;
-      // byteEnd = 0;
-
-      // genesis[0] === if we have booleans
-        // ? stringStart++, byteStart++, hasBooleans = true
-      // genesis[1] === if we have doubles
-        // ? stringStart++, byteStart++, hasDoubles = true
-      // genesis[2] === if we have varints
-        // ? stringStart++, byteStart++, hasVarints = true
-
-      // genesis[3] === if we have strings, how many string fields do we have
-        // ? byteStart++, hasStrings = true, stringEnd = genesis[3]
-      // genesis[4] === if we have bytes, how many bytes fields do we have
-        // ? hasBytes = true, byteEnd = genesis[4]
-
-      // genesis[5 to n], made of two parts, concatenated.
-        // key    --> s0
-        // value
-        //    --> b1, if boolean
-        //    --> d1, if double
-        //    --> i1, if integer
-        //    --> [, if array start
-        //    --> ], if array end
-        //    --> {, if object start
-        //    --> }, if object end
       const references = [];
       const booleans = [];
       const doubles = [];
       const integers = [];
       const strings = [];
       const bytes = [];
-      const traverse = (obj, depth) => {
-        debug(Object.keys(obj));
+      const traverse = (obj, parent) => {
         Object.keys(obj).map((key) => {
           let val = obj[key];
-          debug(key, val, classify(val));
           switch (classify(val)) {
+            case 'undefined':
+              if (strings.includes(key) === false) strings.push(key);
+              references.push(strings.indexOf(key), VALUE_TYPES.UNDEFINED, 0);
+              break;
+            case 'null':
+              if (strings.includes(key) === false) strings.push(key);
+              references.push(strings.indexOf(key), VALUE_TYPES.NULL, 0);
+              break;
+            case 'nan':
+              if (strings.includes(key) === false) strings.push(key);
+              references.push(strings.indexOf(key), VALUE_TYPES.NAN, 0);
+              break;
+            case 'infinity':
+              if (strings.includes(key) === false) strings.push(key);
+              references.push(strings.indexOf(key), VALUE_TYPES.INFINITY, 0);
+              break;
             case 'boolean':
               if (booleans.includes(val) === false) booleans.push(val);
               if (strings.includes(key) === false) strings.push(key);
@@ -245,20 +206,20 @@ class Protosphere {
               break;
             case 'array':
               if (strings.includes(key) === false) strings.push(key);
-              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_START, depth);
-              traverse(val, depth + 1);
-              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_END, depth);
+              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_START, parent);
+              traverse(val, VALUE_TYPES.PARENT_IS_ARRAY);
+              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_END, parent);
               break;
             case 'object':
               if (strings.includes(key) === false) strings.push(key);
-              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_START, depth);
-              traverse(val, depth + 1);
-              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_END, depth);
+              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_START, parent);
+              traverse(val, VALUE_TYPES.PARENT_IS_OBJECT);
+              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_END, parent);
               break;
           }
         });
       };
-      traverse(parameter, 1);
+      traverse(parameter, VALUE_TYPES.PARENT_IS_OBJECT);
       let genesis = concat(
         references.length ? 1 : 0,
         booleans.length ? 1 : 0,
@@ -270,59 +231,59 @@ class Protosphere {
         ' ', bytes.length
       );
 
-      debug('references:', references);
-      debug('booleans:', booleans);
-      debug('doubles:', doubles);
-      debug('integers:', integers);
-      debug('strings:', strings);
-      debug('bytes:', bytes);
-      debug('genesis:', genesis);
+
+
+
+
+
+
+
 
       let protobuf = new pbf();
       let next = 0;
 
       next++;
-      debug('writing genesis @', next);
+
       protobuf.writeStringField(next, genesis)
 
       next++;
-      debug('writing references @', next);
+
       protobuf.writePackedSVarint(next, references)
 
       if (booleans.length) {
         next++;
-        debug('writing booleans @', next);
+
         protobuf.writePackedBoolean(next, booleans);
       };
 
       if (doubles.length) {
         next++;
-        debug('writing doubles @', next);
+
         protobuf.writePackedDouble(next, doubles);
       };
 
       if (integers.length) {
         next++;
-        debug('writing svarints @', next);
+
         protobuf.writePackedSVarint(next, integers);
       };
       if (strings.length) {
         for (var i = 0; i <= strings.length - 1; i++) {
           next++
-          debug('writing strings @', next);
+
           protobuf.writeStringField(next, strings[i]);
         }
       };
       if (bytes.length) {
         for (var i = 0; i <= bytes.length - 1; i++) {
           next++
-          debug('writing bytes @', next);
+
           protobuf.writeBytesField(next, bytes[i]);
         }
       };
 
       let buffer = protobuf.finish();
-      debug('final buffer length:', buffer.length);
+
       resolve(buffer);
     });
   }
@@ -336,6 +297,7 @@ class Protosphere {
       referenceCount, stringCount, byteCount;
       let handlers = [];
       const reader = (tag, data, pbf) => {
+
         if (tag === 1) {
           genesis = pbf.readString().split(' ');
           switches = genesis[0].split('').map((x) => parseInt(x));
@@ -350,55 +312,53 @@ class Protosphere {
           overhead = 0;
           if (switches[0]) {
             overhead++;
-            debug('pushing references handler');
+
             handlers.push((pbf) => {
               references = pbf.readPackedSVarint();
             });
           }
           if (switches[1]) {
             overhead++;
-            debug('pushing booleans handler');
+
             handlers.push((pbf) => {
               booleans = pbf.readPackedBoolean();
             });
           }
           if (switches[2]) {
             overhead++;
-            debug('pushing doubles handler');
+
             handlers.push((pbf) => {
               doubles = pbf.readPackedDouble();
             });
           }
           if (switches[3]) {
             overhead++;
-            debug('pushing integers handler');
+
             handlers.push((pbf) => {
               integers = pbf.readPackedSVarint();
             });
           }
           hasStrings = switches[4] ? true : false;
           hasBytes = switches[5] ? true : false;
-          debug('genesis:', genesis);
-          debug('switches:', switches);
-          debug('stringCount:', stringCount);
-          debug('byteCount:', byteCount);
-          debug('overhead:', overhead);
+
+
+
+
+
         } else {
-          debug('tag:', tag);
           if (tag <= (1 + overhead)) {
-            debug('overhead', overhead);
-            debug('handlers length:', handlers.length);
+
+
             var handler = handlers.shift();
             handler(pbf);
             return;
           } else {
-            debug('tag:', tag);
             if (tag <= (1 + overhead + stringCount)) {
-              debug('destructuring string @', tag);
+
               strings.push(pbf.readString());
             } else {
               if (tag <= (1 + overhead + stringCount + byteCount)) {
-                debug('destructuring byte @', tag);
+
                 strings.push(pbf.readBytes());
               }
             }
@@ -406,19 +366,64 @@ class Protosphere {
         }
       }
       new pbf(buffer).readFields(reader);
-      debug('booleans:', booleans);
-      debug('doubles:', doubles);
-      debug('integers:', integers);
-      debug('references:', references);
-      debug('strings:', strings);
-      debug('bytes:', bytes);
+      /*
+
+
+
+
+
+       */
       references = groupBy(references, 3);
-      debug('grouped references:', references);
+
       let returnObject = {};
       let tempArrays = [];
       let tempObjects = [];
       references.map((reference) => {
         switch (reference[1]) {
+          case VALUE_TYPES.UNDEFINED:
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(undefined);
+              return;
+            }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = undefined;
+              return;
+            }
+            returnObject[strings[reference[0]]] = undefined;
+            break;
+          case VALUE_TYPES.NULL:
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(null);
+              return;
+            }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = null;
+              return;
+            }
+            returnObject[strings[reference[0]]] = null;
+            break;
+          case VALUE_TYPES.NAN:
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(NaN);
+              return;
+            }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = NaN;
+              return;
+            }
+            returnObject[strings[reference[0]]] = NaN;
+            break;
+          case VALUE_TYPES.INFINITY:
+            if (tempArrays.length) {
+              tempArrays[tempArrays.length - 1].push(Infinity);
+              return;
+            }
+            if (tempObjects.length) {
+              tempObjects[tempObjects.length - 1][strings[reference[0]]] = Infinity;
+              return;
+            }
+            returnObject[strings[reference[0]]] = Infinity;
+            break;
           case VALUE_TYPES.BOOLEAN:
             if (tempArrays.length) {
               tempArrays[tempArrays.length - 1].push(booleans[reference[2]]);
@@ -478,16 +483,16 @@ class Protosphere {
             tempArrays.push([]);
             break;
           case VALUE_TYPES.ARRAY_END:
-            if (tempArrays.length >= 2) {
+            if (tempArrays.length >= 2 && reference[2] === VALUE_TYPES.PARENT_IS_ARRAY) {
               tempArrays[tempArrays.length - 2][strings[reference[0]]] = tempArrays[tempArrays.length - 1];
               tempArrays.splice(-1, 1);
               return;
-            }
-            if (tempObjects.length) {
+            };
+            if (tempObjects.length >= 1 && reference[2] === VALUE_TYPES.PARENT_IS_OBJECT) {
               tempObjects[tempObjects.length - 1][strings[reference[0]]] = tempArrays[tempArrays.length - 1];
               tempArrays.splice(-1, 1);
               return;
-            }
+            };
             returnObject[strings[reference[0]]] = tempArrays[tempArrays.length - 1];
             tempArrays.splice(-1, 1);
             break;
@@ -495,23 +500,23 @@ class Protosphere {
             tempObjects.push({});
             break;
           case VALUE_TYPES.OBJECT_END:
-            if (tempObjects.length >= 2) {
+            if (tempArrays.length >= 1 && reference[2] === VALUE_TYPES.PARENT_IS_ARRAY) {
+              tempArrays[tempArrays.length - 1].push(tempObjects[tempObjects.length - 1]);
+              tempObjects.splice(-1, 1);
+              return;
+            };
+            if (tempObjects.length >= 2 && reference[2] === VALUE_TYPES.PARENT_IS_OBJECT) {
               tempObjects[tempObjects.length - 2][strings[reference[0]]] = tempObjects[tempObjects.length - 1];
               tempObjects.splice(-1, 1);
               return;
-            }
+            };
             returnObject[strings[reference[0]]] = tempObjects[tempObjects.length - 1];
             tempObjects.splice(-1, 1);
             break;
         }
       });
-      debug(returnObject);
       resolve(returnObject);
     });
-  }
-  static enableDebug () {
-    debug.enabled = true;
-    debug('DEBUG enabled.');
   }
 }
 if (typeof window !== 'undefined') {
@@ -519,3 +524,14 @@ if (typeof window !== 'undefined') {
 } else if (typeof module !== 'undefined') {
   module.exports = Protosphere;
 }
+// (debug)\(.*\;
+/*
+const debug = (...parameters) => {
+  if (parameters.length >= 2) {
+    console.log.apply(null, parameters);
+  } else {
+    parameters.map((parameter) => {
+      console.dir(parameter, {depth:null, colors: true});
+    });
+  }
+}; */

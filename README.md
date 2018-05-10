@@ -5,28 +5,26 @@
 
 * v3.x
   * Dropped support for >= 50-bit varints
+  * Flattened reference tree for smaller footprint
+  * Support for null values
+  * Support for undefined values
+  * Support for NaN values
+  * Support for Infinity values
+  * Support for nested arrays in arrays
+  * Support for nested objects in objects
+  * Support for nested arrays in objects
+  * Support for nested objects in arrays
 * v2.x
   * Added dist builds:
     * `protosphere.min.js`
-    * `protosphere.core.min.js`
 * v1.x
-  * Fully functional
+  * Barely functional
 * v0.x
-  * Testing
-
-## Todo
-
-* Support null values
-* Support undefined values
-* Support for NaN values
-* Support for Infinity values
-* Natively support long ints as bytes
-* Add checks for empty arrays
-* Add checks for empty objects
-* Refactor references array to strict three-splits principle
-* Flatten references array by using concat instead of push
+  * PoC Testing
 
 ## Usage
+
+#### Installing
 
 ```
 npm install protosphere --save
@@ -34,6 +32,28 @@ yarn add protosphere
 ```
 ```
 const Protosphere = require('protosphere');
+```
+
+#### Sample Usage
+* Example using `buffer` from feross, and `axios`
+* Server-side
+```
+Protosphere.obj2buff(object1)
+.then((result) => {
+  res.set('Content-Type', 'application/octet-stream');
+  res.send(Buffer(result));
+});
+```
+* Client-side
+```
+axios({
+  method:'get',
+  url:'/test',
+  responseType:'arraybuffer'
+})
+.then((response) => Protosphere.buff2obj(Buffer(response.data)))
+.then(console.log)
+.catch(console.error);
 ```
 
 ## class `Protosphere`
@@ -51,8 +71,6 @@ static function `.buff2obj(buffer)`
 * Returns
   * Promise.resolve(`object`)
   * Promise.reject(`string`)
-
-
 
 ## License
 

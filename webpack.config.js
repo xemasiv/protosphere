@@ -14,19 +14,5 @@ module.exports = [
     },
     plugins: [],
     mode: "production"
-  },
-  {
-    entry: ['./index-core.js'],
-    output: {
-      filename: 'protosphere.core.min.js',
-      path: path.resolve(__dirname, 'dist')
-    },
-    module: {
-      rules: [
-        { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
-      ]
-    },
-    plugins: [],
-    mode: "production"
   }
 ];
