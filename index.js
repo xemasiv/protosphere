@@ -145,30 +145,82 @@ let debug = console.log;
 let inspect = (...parameters) => parameters.map((parameter) => {
   console.dir(parameter, { depth:null, colors: true })
 });
+class BooleanSchema {
+  constructor () {
+    this.type = 'boolean';
+    this.allowed = ['boolean', 'undefined', 'null'];
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['boolean'];
+  }
+}
 class StringSchema {
   constructor () {
     this.type = 'string';
+    this.allowed = ['string', 'undefined', 'null'];
+    this.required = false;
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['string'];
   }
 }
 class IntegerSchema {
   constructor () {
     this.type = 'integer';
+    this.allowed = ['integer', 'undefined', 'null', 'nan', 'infinity'];
+    this.required = false;
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['integer'];
   }
 }
 class DoubleSchema {
   constructor () {
     this.type = 'double';
+    this.allowed = ['double', 'undefined', 'null', 'nan', 'infinity'];
+    this.required = false;
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['double'];
   }
 }
 class ObjectSchema {
   constructor (contents) {
     this.type = 'object';
+    this.allowed = ['object', 'undefined', 'null'];
     this.contents = sortObject(contents);
+    this.required = false;
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['object'];
   }
 }
-class BooleanSchema {
+class ArraySchema {
   constructor () {
-    this.type = 'boolean';
+    this.type = 'array';
+    this.allowed = ['array', 'undefined', 'null'];
+    this.required = false;
+  }
+  required () {
+    this.required = true;
+  }
+  strict () {
+    this.allowed = ['array'];
   }
 }
 
@@ -228,6 +280,9 @@ class Protosphere {
     debug('booleans:', booleans);
     debug('reversed:', reversed);
   }
+  static Boolean () {
+    return new BooleanSchema();
+  }
   static String () {
     return new StringSchema();
   }
@@ -240,8 +295,8 @@ class Protosphere {
   static Object (contents) {
     return new ObjectSchema(contents);
   }
-  static Boolean () {
-    return new BooleanSchema();
+  static Array () {
+    return new ArraySchema();
   }
 }
 const VALUE_TYPES = {
