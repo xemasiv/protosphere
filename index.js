@@ -202,7 +202,7 @@ class Protosphere {
         //    --> ], if array end
         //    --> {, if object start
         //    --> }, if object end
-      const exodus = [];
+      const references = [];
       const booleans = [];
       const doubles = [];
       const integers = [];
@@ -217,12 +217,12 @@ class Protosphere {
             case 'boolean':
               if (booleans.includes(val) === false) booleans.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
+              references.push([strings.indexOf(key), VALUE_TYPES.BOOLEAN, booleans.indexOf(val)]);
               break;
             case 'double':
               if (doubles.includes(val) === false) doubles.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
+              references.push([strings.indexOf(key), VALUE_TYPES.DOUBLE, doubles.indexOf(val)]);
               break;
             case 'integer':
               if (long.fromNumber(val).getNumBitsAbs() >= 50) {
@@ -231,24 +231,24 @@ class Protosphere {
               }
               if (integers.includes(val) === false) integers.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
+              references.push([strings.indexOf(key), VALUE_TYPES.INTEGER, integers.indexOf(val)]);
               break;
             case 'string':
               if (strings.includes(val) === false) strings.push(val);
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
+              references.push([strings.indexOf(key), VALUE_TYPES.INTEGER, strings.indexOf(val)]);
               break;
             case 'array':
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
+              references.push([strings.indexOf(key), VALUE_TYPES.ARRAY_START]);
               traverse(val);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
+              references.push([strings.indexOf(key), VALUE_TYPES.ARRAY_END]);
               break;
             case 'object':
               if (strings.includes(key) === false) strings.push(key);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
+              references.push([strings.indexOf(key), VALUE_TYPES.OBJECT_START]);
               traverse(val);
-              exodus.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
+              references.push([strings.indexOf(key), VALUE_TYPES.OBJECT_END]);
               break;
           }
         });
@@ -260,12 +260,12 @@ class Protosphere {
         integers.length ? 1 : 0,
         strings.length ? 1 : 0,
         bytes.length ? 1 : 0,
-        ' ', exodus.length,
+        ' ', references.length,
         ' ', strings.length,
         ' ', bytes.length
       );
 
-      debug('exodus:', exodus);
+      debug('references:', references);
       debug('booleans:', booleans);
       debug('doubles:', doubles);
       debug('integers:', integers);
@@ -326,12 +326,16 @@ class Protosphere {
       switches, overhead,
       booleans, doubles, integers,
       strings, bytes,
-      hasBooleans, hasDoubles, hasVarints, hasStrings, hasBytes;
+      hasBooleans, hasDoubles, hasVarints, hasStrings, hasBytes,
+      referenceCount, stringCount, byteCount;
       let handlers = [];
       const reader = (tag, data, pbf) => {
         if (tag === 1) {
           genesis = pbf.readString().split(' ');
           switches = genesis[0].split('').map((x) => parseInt(x));
+          referenceCount = genesis[1];
+          stringCount = genesis[2];
+          byteCount = genesis[3];
           overhead = 0;
           if (switches[0]) {
             overhead++;
