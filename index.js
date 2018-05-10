@@ -1,7 +1,15 @@
-const _ = require('lodash');
 const pbf = require('pbf');
 const warn = console.warn;
 const errors = [ 'Invalid parameter received.' ];
+
+const mapKeys = require('lodash/fp/mapKeys');
+
+const toPairs = require('lodash/fp/toPairs');
+const sortBy = require('lodash/fp/sortBy');
+const fromPairs = require('lodash/fp/fromPairs');
+const sortObject = (object) => fromPairs(sortBy(0)(toPairs(object)));
+// schema = _(schema).toPairs().sortBy(0).fromPairs().value();
+
 const classify = (subject) => {
   switch (typeof subject) {
     case 'string':
@@ -133,9 +141,10 @@ const groupBy = (arr, n) => {
   }
   return arr2;
 };
-let debug = (...parameters) => parameters.map((parameter) => {
+let debug = console.log;
+let inspect = (...parameters) => parameters.map((parameter) => {
   console.dir(parameter, { depth:null, colors: true })
-})
+});
 class StringSchema {
   constructor () {
     this.type = 'string';
@@ -162,25 +171,23 @@ class BooleanSchema {
     this.type = 'boolean';
   }
 }
+
 class Protosphere {
   static disect (schema, values) {
-    schema = _(schema).toPairs().sortBy(0).fromPairs().value();
+    schema = sortObject(schema);
     debug(schema);
-    debug(_.keys(schema));
     // on transform, we push() to arrays,
     // on hydrate, we shift() from arrays
     const strings = [];
     const booleans = [];
     const traverse = (schema, values) => {
-      _.keys(schema).map((key) => {
+      mapKeys((key) => {
         let s = schema[key];
         let v = values[key];
-        debug('schema requires:', s);
-        debug('entered value:', v);
         if (s.type !== classify(v)) {
-          debug('failed');
+          debug('schema mismatch', s, v);
         } else {
-          debug('passed');
+          debug('schema match');
           switch (s.type) {
             case 'boolean':
               booleans.push(v);
@@ -193,11 +200,34 @@ class Protosphere {
               break;
           }
         }
-      });
+      })(schema);
     };
     traverse(schema, values);
-    debug(strings);
-    debug(booleans);
+    debug('strings:', strings);
+    debug('booleans:', booleans);
+
+    const reverse = (schema, object) => {
+      mapKeys((key) => {
+        let s = schema[key];
+        switch (s.type) {
+          case 'boolean':
+            object[key] = booleans.shift();
+            break;
+          case 'string':
+            object[key] = strings.shift();
+            break;
+          case 'object':
+            object[key] = {};
+            reverse(s.contents, object[key]);
+            break;
+        }
+      })(schema);
+      return object;
+    };
+    let reversed = reverse(schema, {});
+    debug('strings:', strings);
+    debug('booleans:', booleans);
+    debug('reversed:', reversed);
   }
   static String () {
     return new StringSchema();
