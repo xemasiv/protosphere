@@ -320,8 +320,64 @@ class Protosphere {
       resolve(buffer);
     });
   }
-  static fromBuffer () {
+  static fromBuffer (buffer) {
+    return new Promise((resolve, reject) => {
+      let genesis,
+      switches, overhead,
+      booleans, doubles, integers,
+      strings, bytes,
+      hasBooleans, hasDoubles, hasVarints, hasStrings, hasBytes;
+      let handlers = [];
+      const reader = (tag, data, pbf) => {
+        if (tag === 1) {
+          genesis = pbf.readString().split(' ');
+          switches = genesis[0].split('').map((x) => parseInt(x));
+          overhead = 0;
+          if (switches[0]) {
+            overhead++;
+            debug('pushing booleans handler');
+            handlers.push((pbf) => {
+              booleans = pbf.readPackedBoolean();
+            });
+          }
+          if (switches[1]) {
+            overhead++;
+            debug('pushing doubles handler');
+            handlers.push((pbf) => {
+              doubles = pbf.readPackedDouble();
+            });
+          }
+          if (switches[2]) {
+            overhead++;
+            debug('pushing integers handler');
+            handlers.push((pbf) => {
+              integers = pbf.readPackedSVarint();
+            });
+          }
+          hasStrings = switches[3] ? true : false;
+          hasBytes = switches[4] ? true : false;
+          debug('genesis:', genesis);
+          debug('switches:', switches);
+          debug('overhead:', overhead);
+        } else {
+          debug('tag:', tag);
+          if (tag <= (1 + overhead)) {
+            debug('overhead', overhead);
+            debug('handlers length:', handlers.length);
+            var handler = handlers.shift();
+            handler(pbf);
+            return;
+          } else {
 
+          }
+        }
+      }
+      let data = new pbf(buffer).readFields(reader, {});
+      debug('booleans:', booleans);
+      debug('doubles:', doubles);
+      debug('integers:', integers);
+      debug(data);
+    });
   }
   static enableDebug () {
     debug.enabled = true;
