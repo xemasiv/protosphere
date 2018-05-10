@@ -297,14 +297,19 @@ class Protosphere {
         debug('writing svarints @', next);
         protobuf.writePackedSVarint(next, integers);
       };
-
+      if (references.length) {
+        for (var i = 0; i <= references.length - 1; i++) {
+          next++
+          debug('writing references @', next);
+          protobuf.writePackedSVarint(next, references[i]);
+        }
+      };
       if (strings.length) {
         for (var i = 0; i <= strings.length - 1; i++) {
           next++
           debug('writing strings @', next);
           protobuf.writeStringField(next, strings[i]);
         }
-        debug('ended @', next - 1, 'next will be', next);
       };
       if (bytes.length) {
         for (var i = 0; i <= bytes.length - 1; i++) {
@@ -312,7 +317,6 @@ class Protosphere {
           debug('writing bytes @', next);
           protobuf.writeBytesField(next, bytes[i]);
         }
-        debug('ended @', next - 1, 'next will be', next);
       };
 
       let buffer = protobuf.finish();
