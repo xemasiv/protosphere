@@ -3,6 +3,7 @@ let long = require('long');
 // Protosphere.enableDebug();
 
 let object1 = {
+  testEmptyArray: [],
   testBool1: true,
   testBool2: false,
   testString: 'xemasiv',

@@ -12,6 +12,18 @@
 * v0.x
   * Testing
 
+## Todo
+
+* Support null values
+* Support undefined values
+* Support for NaN values
+* Support for Infinity values
+* Natively support long ints as bytes
+* Add checks for empty arrays
+* Add checks for empty objects
+* Refactor references array to strict three-splits principle
+* Flatten references array by using concat instead of push
+
 ## Usage
 
 ```
