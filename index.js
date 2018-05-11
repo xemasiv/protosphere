@@ -141,10 +141,18 @@ const groupBy = (arr, n) => {
   }
   return arr2;
 };
+const fillArray = (withThis, length) => {
+  var arr = new Array(length);
+  for (var i = 0; i < length; i++) {
+    arr[i] = withThis;
+  }
+  return arr;
+}
 let debug = console.log;
 let inspect = (...parameters) => parameters.map((parameter) => {
   console.dir(parameter, { depth:null, colors: true })
 });
+
 class BooleanSchema {
   constructor () {
     this.type = 'boolean';
@@ -152,9 +160,12 @@ class BooleanSchema {
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['boolean'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class StringSchema {
@@ -165,9 +176,12 @@ class StringSchema {
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['string'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class IntegerSchema {
@@ -178,9 +192,12 @@ class IntegerSchema {
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['integer'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class DoubleSchema {
@@ -191,9 +208,12 @@ class DoubleSchema {
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['double'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class ObjectSchema {
@@ -205,60 +225,93 @@ class ObjectSchema {
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['object'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class ArraySchema {
-  constructor () {
+  constructor (schema) {
     this.type = 'array';
     this.allowed = ['array', 'undefined', 'null'];
+    this.schema = schema;
     this.required = false;
   }
   required () {
     this.required = true;
+    this.allowed.splice(x.indexOf('undefined'), 1);
   }
   strict () {
     this.allowed = ['array'];
+    this.allowed.splice(x.indexOf('undefined'), 1);
+    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 
 class Protosphere {
   static disect (schema, values) {
     schema = sortObject(schema);
-    inspect(schema);
+    // inspect(schema);
     // on transform, we push() to arrays,
     // on hydrate, we shift() from arrays
+    const arrays = [];
     const strings = [];
     const booleans = [];
+    const integers = [];
+    const doubles = [];
+    let inputs = 0;
     const traverse = (schema, values) => {
+      // debug('\n\n\t• • • • • • • • • • • • • • •');
+      // inspect(schema);
+      // debug('\t• • • • • • • • • • • • • • •\n\n');
       mapKeys((key) => {
+        inputs++;
         let s = schema[key];
         let v = values[key];
+        /*
         if (s.type !== classify(v)) {
           debug('schema mismatch', s, v);
-        } else {
-          switch (s.type) {
-            case 'boolean':
-              booleans.push(v);
-              break;
-            case 'string':
-              strings.push(v);
-              break;
-            case 'object':
-              traverse(s.contents, v);
-              break;
-          }
+        } */
+        switch (s.type) {
+          case 'boolean':
+            booleans.push(v);
+            break;
+          case 'string':
+            strings.push(v);
+            break;
+          case 'integer':
+            integers.push(v);
+            break;
+          case 'double':
+            doubles.push(v);
+            break;
+          case 'array':
+            if (s.schema) {
+              arrays.push([inputs, v.length]);
+              traverse(fillArray(s.schema, v.length), v);
+            }
+            break;
+          case 'object':
+            traverse(s.contents, v);
+            break;
         }
+        debug(inputs, key, v, s.type);
       })(schema);
     };
     traverse(schema, values);
+    debug('arrays:', arrays);
     debug('strings:', strings);
     debug('booleans:', booleans);
+    debug('integers:', integers);
+    debug('doubles:', doubles);
 
+    let outputs = 0;
     const reverse = (schema, object) => {
       mapKeys((key) => {
+        outputs++;
         let s = schema[key];
         switch (s.type) {
           case 'boolean':
@@ -267,18 +320,33 @@ class Protosphere {
           case 'string':
             object[key] = strings.shift();
             break;
+          case 'integer':
+            object[key] = integers.shift();
+            break;
+          case 'double':
+            object[key] = doubles.shift();
+            break;
+          case 'array':
+            object[key] = [];
+            let selectedArray = arrays.shift();
+            reverse(fillArray(s.schema, selectedArray[1]), object[key]);
+            break;
           case 'object':
             object[key] = {};
             reverse(s.contents, object[key]);
             break;
         }
+        debug(outputs, key);
       })(schema);
       return object;
     };
     let reversed = reverse(schema, {});
+    debug('arrays:', arrays);
     debug('strings:', strings);
     debug('booleans:', booleans);
-    debug('reversed:', reversed);
+    debug('integers:', integers);
+    debug('doubles:', doubles);
+    inspect(reversed);
   }
   static Boolean () {
     return new BooleanSchema();
@@ -295,8 +363,8 @@ class Protosphere {
   static Object (contents) {
     return new ObjectSchema(contents);
   }
-  static Array () {
-    return new ArraySchema();
+  static Array (schema) {
+    return new ArraySchema(schema);
   }
 }
 const VALUE_TYPES = {

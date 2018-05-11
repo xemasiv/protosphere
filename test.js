@@ -71,14 +71,37 @@ let schema = {
   name: Protosphere.String(),
   details: Protosphere.Object({
     verified: Protosphere.Boolean()
-  })
+  }),
+  age: Protosphere.Integer(),
+  bitcoins: Protosphere.Double(),
+  memberships: Protosphere.Array(
+    Protosphere.String()
+  ),
+  coinPairs: Protosphere.Array(
+    Protosphere.Array(
+      Protosphere.String()
+    )
+  )
 };
 let values = {
   name: 'Xemasiv',
   details: {
     verified: true
   },
-  sampleNull: null
+  isNull: null,
+  isUndefined: undefined,
+  age: Math.pow(2, 50),
+  bitcoins: 0.9999999999999991,
+  memberships: ['Amex', 'Mastercard'],
+  coinPairs: [
+    ['USD', 'BTC'],
+    ['EUR', 'BTC']
+  ]
 };
 
 Protosphere.disect(schema, values);
+
+const toPairs = require('lodash/fp/toPairs');
+const sortBy = require('lodash/fp/sortBy');
+const fromPairs = require('lodash/fp/fromPairs');
+const sortObject = (object) => fromPairs(sortBy(0)(toPairs(object)));
