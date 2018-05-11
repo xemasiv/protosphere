@@ -62,7 +62,7 @@ ps.transform(values)
 * Send this buffer to anywhere in the world
 * Rehydrate it upon receipt:
 ```
-// const Buffer = require('buffer');
+// const Buffer = require('buffer').Buffer;
 // https://www.npmjs.com/package/buffer
 ps.hydrate(Buffer(response.data))
   .then((values) => console.log('values:', values));
