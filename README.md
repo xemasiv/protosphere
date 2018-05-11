@@ -11,7 +11,7 @@
 
 * v4.x
   * Uses schemas (see examples).
-  * Lodash-based object-key ordering for intelligent.
+  * Lodash-based object-key ordering for intelligent destructuring.
   * Adaptive buffer structure for present & absent values.
   * Added dist build: `protosphere.min.js`
 * v0.x to v3.x
