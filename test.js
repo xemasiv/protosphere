@@ -97,6 +97,9 @@ let schema = {
   undefinedString: Protosphere.String(),
   nullString: Protosphere.String(),
   errorString: Protosphere.String(),
+  undefinedInteger: Protosphere.Integer(),
+  nullInteger: Protosphere.Integer(),
+  errorInteger: Protosphere.Integer(),
 };
 let values = {
   name: 'Xemasiv',
@@ -125,6 +128,10 @@ let values = {
   nullBoolean: null,
   undefinedString: undefined,
   nullString: null,
+  undefinedInteger: undefined,
+  nullInteger: null,
+  
+  // errorInteger: 'sample string for error',
   // errorString: 123
   // errorBoolean: 123
 };
