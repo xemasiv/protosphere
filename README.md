@@ -68,12 +68,68 @@ ps.hydrate(Buffer(response.data))
   .then((values) => console.log('values:', values));
 ```
 
+#### Accepted Schema Values:
+* `Protosphere.Boolean()`
+  * Accepts `true`, `false`, `null`, `undefined`
+```
+let ps = new Protosphere({
+  isVerified: Protosphere.Boolean()
+});
+```
+* `Protosphere.String()`
+  * Accepts any strings, `null`, `undefined`
+```
+let ps = new Protosphere({
+  name: Protosphere.String()
+});
+```
+* `Protosphere.Integer()`
+  * Accepts positive/negative integers, `null`, `undefined`
+```
+let ps = new Protosphere({
+  age: Protosphere.Integer()
+});
+```
+* `Protosphere.Double()`
+  * Accepts floating points / doubles, `null`, `undefined`
+```
+let ps = new Protosphere({
+  amount: Protosphere.Double()
+});
+```
+* `Protosphere.Object({mapped: schemas})`
+  * Accepts string keys and (schema) as values , `null`, `undefined`
+```
+let ps = new Protosphere({
+  configs: Protosphere.Object({
+    fullscreen: Protosphere.Boolean(),
+    brightness: Protosphere.Integer()
+  })
+});
+```
+* `Protosphere.Array(schemas)`
+  * Accepts one schema (even object schema) as value, `null`, `undefined`
+```
+let ps = new Protosphere({
+  students: Protosphere.Array(
+    Protosphere.Object({
+      name: Protosphere.String(),
+      height: Protosphere.Double()
+    })
+  )
+});
+```
+
 #### Testing
 * Provided example shows comparison between two requests:
 * Req # 1: `axios` + `protosphere` + `application/octet-stream`
 * Req # 2: `axios` + `application/json`
 ```
 npm run playground
+```
+* A bare `test.js` is also provided.
+```
+npm test
 ```
 
 ## class `Protosphere`
