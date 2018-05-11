@@ -81,7 +81,16 @@ let schema = {
     Protosphere.Array(
       Protosphere.String()
     )
-  )
+  ),
+  configs: Protosphere.Object({
+    video: Protosphere.Object({
+      hue: Protosphere.Integer(),
+      saturation: Protosphere.Integer()
+    }),
+    audio: Protosphere.Object({
+      volume: Protosphere.Double()
+    })
+  })
 };
 let values = {
   name: 'Xemasiv',
@@ -96,7 +105,16 @@ let values = {
   coinPairs: [
     ['USD', 'BTC'],
     ['EUR', 'BTC']
-  ]
+  ],
+  configs: {
+    video: {
+      hue: 50,
+      saturation: 70
+    },
+    audio: {
+      volume: 95.50
+    }
+  }
 };
 
 Protosphere.disect(schema, values);
