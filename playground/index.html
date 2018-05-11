@@ -4,7 +4,6 @@
 <script>
   const Buffer = buffer.Buffer;
 
-
   const ps = new Protosphere({
     name: Protosphere.String(),
     details: Protosphere.Object({
@@ -54,20 +53,29 @@
     nullObject: Protosphere.Object(),
     errorObject: Protosphere.Object(),
   });
+
   axios({
     method:'get',
-    url:'/endpoint/arraybuffer?456',
-    responseType:'arraybuffer'
+    url:'/endpoint/json',
+    responseType:'json'
   })
-  .then((response) => ps.hydrate(Buffer(response.data)))
-  .then((result) => console.log('arraybuffer', result))
+  .then((response) =>console.log('json', response.data))
   .catch(console.error);
 
   axios({
     method:'get',
-    url:'/endpoint/json?123',
+    url:'/endpoint/arraybuffer_raw',
     responseType:'json'
   })
   .then((response) =>console.log('json', response.data))
+  .catch(console.error);
+
+  axios({
+    method:'get',
+    url:'/endpoint/arraybuffer_protosphere',
+    responseType:'arraybuffer'
+  })
+  .then((response) => ps.hydrate(Buffer(response.data)))
+  .then((result) => console.log('arraybuffer', result))
   .catch(console.error);
 </script>

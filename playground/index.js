@@ -112,7 +112,11 @@ app.get('/endpoint/json', (req, res) => {
   res.set('Content-Type', 'application/json');
   res.send(values);
 });
-app.get('/endpoint/arraybuffer', (req, res) => {
+app.get('/endpoint/arraybuffer_raw', (req, res) => {
+  res.set('Content-Type', 'application/octet-stream');
+  res.send(Buffer(JSON.stringify(values)));
+});
+app.get('/endpoint/arraybuffer_protosphere', (req, res) => {
   Promise.resolve()
     .then((result) => ps.transform(values))
     .then((result) => {
