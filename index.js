@@ -278,7 +278,22 @@ class Protosphere {
             }
             break;
           case 'double':
-            doubles.push(v);
+            switch (classify(v)) {
+              case 'double':
+                doubles.push(v);
+                break;
+              case 'null':
+                nulls.push(inputs);
+                break;
+              case 'undefined':
+                undefineds.push(inputs);
+                break;
+              default:
+                throw new TypeError(
+                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                );
+                break;
+            }
             break;
           case 'array':
             if (s.schema) {
@@ -338,7 +353,13 @@ class Protosphere {
             }
             break;
           case 'double':
-            object[key] = doubles.shift();
+            if (undefineds.includes(outputs)) {
+              object[key] = undefined;
+            } else if (nulls.includes(outputs)) {
+              object[key] = null;
+            } else {
+              object[key] = doubles.shift();
+            }
             break;
           case 'array':
             let arrayLength = arrays.shift();
