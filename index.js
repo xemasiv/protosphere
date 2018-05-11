@@ -264,9 +264,9 @@ class Protosphere {
     const doubles = [];
     let inputs = 0;
     const traverse = (schema, values) => {
-      // debug('\n\n\t• • • • • • • • • • • • • • •');
-      // inspect(schema);
-      // debug('\t• • • • • • • • • • • • • • •\n\n');
+      debug('\n\n');
+      inspect(schema);
+      debug('\n\n');
       mapKeys((key) => {
         inputs++;
         let s = schema[key];
@@ -290,7 +290,7 @@ class Protosphere {
             break;
           case 'array':
             if (s.schema) {
-              arrays.push([inputs, v.length]);
+              arrays.push(v.length);
               traverse(fillArray(s.schema, v.length), v);
             }
             break;
@@ -328,8 +328,8 @@ class Protosphere {
             break;
           case 'array':
             object[key] = [];
-            let selectedArray = arrays.shift();
-            reverse(fillArray(s.schema, selectedArray[1]), object[key]);
+            let arrayLength = arrays.shift();
+            reverse(fillArray(s.schema, arrayLength), object[key]);
             break;
           case 'object':
             object[key] = {};
