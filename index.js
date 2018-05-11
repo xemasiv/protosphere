@@ -1,9 +1,4 @@
 const pbf = require('pbf');
-const warn = console.warn;
-const errors = [ 'Invalid parameter received.' ];
-
-const sha256 = require('js-sha256').sha256;
-
 const mapKeys = require('lodash/fp/mapKeys');
 const toPairs = require('lodash/fp/toPairs');
 const sortBy = require('lodash/fp/sortBy');
@@ -187,14 +182,12 @@ class ArraySchema {
 class Protosphere {
   constructor (schema) {
     schema = sortObject(schema);
-    schema.hash = sha256(JSON.stringify(schema));
     this.schema = schema;
   }
   transform (values) {
     const schema = this.schema;
     return new Promise((resolve, reject) => {
       try {
-        debug('hash:', schema.hash);
         // inspect(schema);
         // on transform, we push() to arrays,
         // on hydrate, we shift() from arrays
@@ -347,8 +340,7 @@ class Protosphere {
           nans.length ? 1 : 0,
           infinitys.length ? 1 : 0,
           strings.length ? 1 : 0,
-          ' ', strings.length,
-          ' ', 'hashgoeshere'
+          ' ', strings.length
         );
         debug('genesis:', genesis);
         debug('arrays:', arrays);
