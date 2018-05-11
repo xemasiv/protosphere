@@ -132,6 +132,14 @@ const concat = (...args) => {
   args.map((arg, index) => str = str.concat(String(arg)));
   return str;
 };
+const concats = (...args) => {
+  let str = '';
+  args.map((arg, index) => {
+    str = index === 0 ? String(arg) : str.concat(' ', String(arg));
+  });
+  return str;
+};
+const stringify = (arg) => JSON.stringify(arg, null, 2);
 const groupBy = (arr, n) => {
 	var arr2 = [];
   for (var i = 0, j = 0; i < arr.length; i++) {
@@ -156,16 +164,6 @@ let inspect = (...parameters) => parameters.map((parameter) => {
 class BooleanSchema {
   constructor () {
     this.type = 'boolean';
-    this.allowed = ['boolean', 'undefined', 'null'];
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['boolean'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class StringSchema {
@@ -262,6 +260,10 @@ class Protosphere {
     const booleans = [];
     const integers = [];
     const doubles = [];
+    const nulls = [];
+    const undefineds = [];
+    const nans = [];
+    const infinitys = [];
     let inputs = 0;
     const traverse = (schema, values) => {
       debug('\n\n');
@@ -277,7 +279,22 @@ class Protosphere {
         } */
         switch (s.type) {
           case 'boolean':
-            booleans.push(v);
+            switch (classify(v)) {
+              case 'boolean':
+                booleans.push(v);
+                break;
+              case 'null':
+                nulls.push(inputs);
+                break;
+              case 'undefined':
+                undefineds.push(inputs);
+                break;
+              default:
+                throw new TypeError(
+                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                );
+                break;
+            }
             break;
           case 'string':
             strings.push(v);
@@ -307,6 +324,10 @@ class Protosphere {
     debug('booleans:', booleans);
     debug('integers:', integers);
     debug('doubles:', doubles);
+    debug('nulls:', nulls);
+    debug('undefineds:', undefineds);
+    debug('nans:', nans);
+    debug('infinitys:', infinitys);
 
     let outputs = 0;
     const reverse = (schema, object) => {
@@ -315,7 +336,13 @@ class Protosphere {
         let s = schema[key];
         switch (s.type) {
           case 'boolean':
-            object[key] = booleans.shift();
+            if (undefineds.includes(outputs)) {
+              object[key] = undefined;
+            } else if (nulls.includes(outputs)) {
+              object[key] = null;
+            } else {
+              object[key] = booleans.shift();
+            }
             break;
           case 'string':
             object[key] = strings.shift();
@@ -327,8 +354,8 @@ class Protosphere {
             object[key] = doubles.shift();
             break;
           case 'array':
-            object[key] = [];
             let arrayLength = arrays.shift();
+            object[key] = new Array(arrayLength);
             reverse(fillArray(s.schema, arrayLength), object[key]);
             break;
           case 'object':
@@ -346,6 +373,10 @@ class Protosphere {
     debug('booleans:', booleans);
     debug('integers:', integers);
     debug('doubles:', doubles);
+    debug('nulls:', nulls);
+    debug('undefineds:', undefineds);
+    debug('nans:', nans);
+    debug('infinitys:', infinitys);
     inspect(reversed);
   }
   static Boolean () {

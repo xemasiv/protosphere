@@ -90,7 +90,10 @@ let schema = {
     audio: Protosphere.Object({
       volume: Protosphere.Double()
     })
-  })
+  }),
+  undefinedBoolean: Protosphere.Boolean(),
+  nullBoolean: Protosphere.Boolean(),
+  errorBoolean: Protosphere.Boolean()
 };
 let values = {
   name: 'Xemasiv',
@@ -114,7 +117,10 @@ let values = {
     audio: {
       volume: 95.50
     }
-  }
+  },
+  undefinedBoolean: undefined,
+  nullBoolean: null,
+  errorBoolean: 123
 };
 
 Protosphere.disect(schema, values);
