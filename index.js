@@ -296,13 +296,43 @@ class Protosphere {
             }
             break;
           case 'array':
-            if (s.schema) {
-              arrays.push(v.length);
-              traverse(fillArray(s.schema, v.length), v);
+            switch (classify(v)) {
+              case 'array':
+                if (s.schema) {
+                  arrays.push(v.length);
+                  traverse(fillArray(s.schema, v.length), v);
+                }
+                break;
+              case 'null':
+                nulls.push(inputs);
+                break;
+              case 'undefined':
+                undefineds.push(inputs);
+                break;
+              default:
+                throw new TypeError(
+                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                );
+                break;
             }
             break;
           case 'object':
-            traverse(s.contents, v);
+            switch (classify(v)) {
+              case 'object':
+                traverse(s.contents, v);
+                break;
+              case 'null':
+                nulls.push(inputs);
+                break;
+              case 'undefined':
+                undefineds.push(inputs);
+                break;
+              default:
+                throw new TypeError(
+                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                );
+                break;
+            }
             break;
         }
         debug(inputs, key, v, s.type);
@@ -362,13 +392,25 @@ class Protosphere {
             }
             break;
           case 'array':
-            let arrayLength = arrays.shift();
-            object[key] = new Array(arrayLength);
-            reverse(fillArray(s.schema, arrayLength), object[key]);
+            if (undefineds.includes(outputs)) {
+              object[key] = undefined;
+            } else if (nulls.includes(outputs)) {
+              object[key] = null;
+            } else {
+              let arrayLength = arrays.shift();
+              object[key] = new Array(arrayLength);
+              reverse(fillArray(s.schema, arrayLength), object[key]);
+            }
             break;
           case 'object':
-            object[key] = {};
-            reverse(s.contents, object[key]);
+            if (undefineds.includes(outputs)) {
+              object[key] = undefined;
+            } else if (nulls.includes(outputs)) {
+              object[key] = null;
+            } else {
+              object[key] = {};
+              reverse(s.contents, object[key]);
+            }
             break;
         }
         debug(outputs, key);

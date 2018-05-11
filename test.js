@@ -107,6 +107,14 @@ let schema = {
   undefinedDouble: Protosphere.Double(),
   nullDouble: Protosphere.Double(),
   errorDouble: Protosphere.Double(),
+
+  undefinedArray: Protosphere.Array(),
+  nullArray: Protosphere.Array(),
+  errorArray: Protosphere.Array(),
+
+  undefinedObject: Protosphere.Object(),
+  nullObject: Protosphere.Object(),
+  errorObject: Protosphere.Object(),
 };
 let values = {
   name: 'Xemasiv',
@@ -139,7 +147,12 @@ let values = {
   nullInteger: null,
   undefinedDouble: undefined,
   nullDouble: null,
-
+  undefinedArray: undefined,
+  nullArray: null,
+  undefinedObject: undefined,
+  nullObject: null,
+  // errorObject: 'sample string for error',
+  // errorArray: 'sample string for error',
   // errorDouble: 'sample string for error',
   // errorInteger: 'sample string for error',
   // errorString: 123
