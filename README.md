@@ -9,29 +9,13 @@
 
 ## Changelog
 
-* v3.x
-  * Playground shows very minimal gain, for refactor.
-  * Dropped support for >= 50-bit varints
-  * Flattened reference tree for smaller footprint
-  * Support for null values
-  * Support for undefined values
-  * Support for NaN values
-  * Support for Infinity values
-  * Support for nested arrays in arrays
-  * Support for nested objects in objects
-  * Support for nested arrays in objects
-  * Support for nested objects in arrays
-* v2.x
-  * Added dist builds:
-    * `protosphere.min.js`
-* v1.x
-  * Barely functional
-* v0.x
-  * PoC Testing
-
-## To Do:
-
-* 
+* v4.x
+  * Uses schemas (see examples).
+  * Lodash-based object-key ordering for intelligent.
+  * Adaptive buffer structure for present & absent values.
+  * Added dist build: `protosphere.min.js`
+* v0.x to v3.x
+  * PoC testing, bad performance, barely functional
 
 ## Usage
 
@@ -41,47 +25,76 @@
 npm install protosphere --save
 yarn add protosphere
 ```
-```
-const Protosphere = require('protosphere');
-```
 
 #### Sample Usage
-* Example using `buffer` from feross, and `axios`
-* Server-side
+* Create an instance with a schema:
 ```
-Protosphere.obj2buff(object1)
-.then((result) => {
-  res.set('Content-Type', 'application/octet-stream');
-  res.send(Buffer(result));
+const Protosphere = require('protosphere');
+const ps = new Protosphere({
+  name: Protosphere.String(),
+  details: Protosphere.Object({
+    verified: Protosphere.Boolean()
+  }),
+  age: Protosphere.Integer(),
+  bitcoins: Protosphere.Double(),
+  memberships: Protosphere.Array(
+    Protosphere.String()
+  )
 });
 ```
-* Client-side
+* Prepare your values:
 ```
-axios({
-  method:'get',
-  url:'/test',
-  responseType:'arraybuffer'
-})
-.then((response) => Protosphere.buff2obj(Buffer(response.data)))
-.then(console.log)
-.catch(console.error);
+let values = {
+  name: 'Xemasiv',
+  details: {
+    verified: true
+  },
+  age: Math.pow(2, 50),
+  bitcoins: 0.9999999999999991,
+  memberships: ['Amex', 'Mastercard']
+};
+```
+* Transform these values to get the buffer:
+```
+ps.transform(values)
+  .then((buffer) => console.log('buffer:', buffer));
+```
+* Send this buffer to anywhere in the world
+* Rehydrate it upon receipt:
+```
+// const Buffer = require('buffer');
+// https://www.npmjs.com/package/buffer
+ps.hydrate(Buffer(response.data))
+  .then((values) => console.log('values:', values));
+```
+
+#### Testing
+* Provided example shows comparison between two requests:
+* Req # 1: `axios` + `protosphere` + `application/octet-stream`
+* Req # 2: `axios` + `application/json`
+```
+npm run playground
 ```
 
 ## class `Protosphere`
 
-static function `.obj2buff(object)`
+`constructor (schema)`
 * Takes
-  * `object`
-* Returns
-  * Promise.resolve(`buffer`)
-  * Promise.reject(`string`)
+  * `object` - the schema to be used.
 
-static function `.buff2obj(buffer)`
+function `.transform(object)`
 * Takes
-  * `buffer`
+  * `object` - the object with values to be transformed
 * Returns
-  * Promise.resolve(`object`)
-  * Promise.reject(`string`)
+  * Promise.resolve(`buffer`) - result buffer
+  * Promise.reject(`error`) - error from try catch
+
+function `.hydrate(buffer)`
+* Takes
+  * `buffer` - the buffer to be hydrated
+* Returns
+  * Promise.resolve(`object`) - original object
+  * Promise.reject(`error`) - error from try catch
 
 ## License
 
