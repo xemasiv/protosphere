@@ -201,220 +201,229 @@ class Protosphere {
     schema.hash = sha256(JSON.stringify(schema));
     return schema;
   }
-  static disect (schema, values) {
-    debug('hash:', schema.hash);
-    // inspect(schema);
-    // on transform, we push() to arrays,
-    // on hydrate, we shift() from arrays
-    const arrays = [];
-    const strings = [];
-    const booleans = [];
-    const integers = [];
-    const doubles = [];
-    const nulls = [];
-    const undefineds = [];
-    const nans = [];
-    const infinitys = [];
-    let inputs = 0;
-    const traverse = (schema, values) => {
-      debug('\n\n');
-      inspect(schema);
-      debug('\n\n');
-      mapKeys((key) => {
-        inputs++;
-        let s = schema[key];
-        let v = values[key];
-        /*
-        if (s.type !== classify(v)) {
-          debug('schema mismatch', s, v);
-        } */
-        switch (s.type) {
-          case 'boolean':
-            switch (classify(v)) {
+  static transform (schema, values) {
+    return new Promise((resolve, reject) => {
+      try {
+
+        debug('hash:', schema.hash);
+        // inspect(schema);
+        // on transform, we push() to arrays,
+        // on hydrate, we shift() from arrays
+        const arrays = [];
+        const strings = [];
+        const booleans = [];
+        const integers = [];
+        const doubles = [];
+        const nulls = [];
+        const undefineds = [];
+        const nans = [];
+        const infinitys = [];
+        let inputs = 0;
+        const traverse = (schema, values) => {
+          debug('\n\n');
+          inspect(schema);
+          debug('\n\n');
+          mapKeys((key) => {
+            inputs++;
+            let s = schema[key];
+            let v = values[key];
+            /*
+            if (s.type !== classify(v)) {
+              debug('schema mismatch', s, v);
+            } */
+            switch (s.type) {
               case 'boolean':
-                booleans.push(v);
-                break;
-              case 'null':
-                nulls.push(inputs);
-                break;
-              case 'undefined':
-                undefineds.push(inputs);
-                break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
-                break;
-            }
-            break;
-          case 'string':
-            switch (classify(v)) {
-              case 'string':
-                strings.push(v);
-                break;
-              case 'null':
-                nulls.push(inputs);
-                break;
-              case 'undefined':
-                undefineds.push(inputs);
-                break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
-                break;
-            }
-            break;
-          case 'integer':
-            switch (classify(v)) {
-              case 'integer':
-                integers.push(v);
-                break;
-              case 'null':
-                nulls.push(inputs);
-                break;
-              case 'undefined':
-                undefineds.push(inputs);
-                break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
-                break;
-            }
-            break;
-          case 'double':
-            switch (classify(v)) {
-              case 'double':
-                doubles.push(v);
-                break;
-              case 'null':
-                nulls.push(inputs);
-                break;
-              case 'undefined':
-                undefineds.push(inputs);
-                break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
-                break;
-            }
-            break;
-          case 'array':
-            switch (classify(v)) {
-              case 'array':
-                if (s.schema) {
-                  arrays.push(v.length);
-                  traverse(fillArray(s.schema, v.length), v);
+                switch (classify(v)) {
+                  case 'boolean':
+                    booleans.push(v);
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
                 }
                 break;
-              case 'null':
-                nulls.push(inputs);
+              case 'string':
+                switch (classify(v)) {
+                  case 'string':
+                    strings.push(v);
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
+                }
                 break;
-              case 'undefined':
-                undefineds.push(inputs);
+              case 'integer':
+                switch (classify(v)) {
+                  case 'integer':
+                    integers.push(v);
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
+                }
                 break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
+              case 'double':
+                switch (classify(v)) {
+                  case 'double':
+                    doubles.push(v);
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
+                }
                 break;
-            }
-            break;
-          case 'object':
-            switch (classify(v)) {
+              case 'array':
+                switch (classify(v)) {
+                  case 'array':
+                    if (s.schema) {
+                      arrays.push(v.length);
+                      traverse(fillArray(s.schema, v.length), v);
+                    }
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
+                }
+                break;
               case 'object':
-                traverse(s.contents, v);
-                break;
-              case 'null':
-                nulls.push(inputs);
-                break;
-              case 'undefined':
-                undefineds.push(inputs);
-                break;
-              default:
-                throw new TypeError(
-                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
-                );
+                switch (classify(v)) {
+                  case 'object':
+                    traverse(s.contents, v);
+                    break;
+                  case 'null':
+                    nulls.push(inputs);
+                    break;
+                  case 'undefined':
+                    undefineds.push(inputs);
+                    break;
+                  default:
+                    throw new TypeError(
+                      concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                    );
+                    break;
+                }
                 break;
             }
-            break;
-        }
-        debug(inputs, key, v, s.type);
-      })(schema);
-    };
-    traverse(schema, values);
+            debug(inputs, key, v, s.type);
+          })(schema);
+        };
+        traverse(schema, values);
+        let genesis = concat(
+          arrays.length ? 1 : 0,
+          booleans.length ? 1 : 0,
+          integers.length ? 1 : 0,
+          doubles.length ? 1 : 0,
+          nulls.length ? 1 : 0,
+          undefineds.length ? 1 : 0,
+          nans.length ? 1 : 0,
+          infinitys.length ? 1 : 0,
+          strings.length ? 1 : 0,
+          ' ', strings.length,
+          ' ', 'hashgoeshere'
+        );
+        debug('genesis:', genesis);
+        debug('arrays:', arrays);
+        debug('booleans:', booleans);
+        debug('integers:', integers);
+        debug('doubles:', doubles);
+        debug('nulls:', nulls);
+        debug('undefineds:', undefineds);
+        debug('nans:', nans);
+        debug('infinitys:', infinitys);
+        debug('strings:', strings);
 
-    let genesis = concat(
-      arrays.length ? 1 : 0,
-      booleans.length ? 1 : 0,
-      integers.length ? 1 : 0,
-      doubles.length ? 1 : 0,
-      nulls.length ? 1 : 0,
-      undefineds.length ? 1 : 0,
-      nans.length ? 1 : 0,
-      infinitys.length ? 1 : 0,
-      strings.length ? 1 : 0,
-      ' ', strings.length,
-      ' ', 'hashgoeshere'
-    );
-    debug('genesis:', genesis);
-    debug('arrays:', arrays);
-    debug('booleans:', booleans);
-    debug('integers:', integers);
-    debug('doubles:', doubles);
-    debug('nulls:', nulls);
-    debug('undefineds:', undefineds);
-    debug('nans:', nans);
-    debug('infinitys:', infinitys);
-    debug('strings:', strings);
+        let protobuf = new pbf();
+        let next = 0;
 
-    let protobuf = new pbf();
-    let next = 0;
-
-    next++;
-    protobuf.writeStringField(next, genesis)
-    if (arrays.length) {
-      next++;
-      protobuf.writePackedVarint(next, arrays);
-    };
-    if (booleans.length) {
-      next++;
-      protobuf.writePackedBoolean(next, booleans);
-    };
-    if (integers.length) {
-      next++;
-      protobuf.writePackedSVarint(next, integers);
-    };
-    if (doubles.length) {
-      next++;
-      protobuf.writePackedDouble(next, doubles);
-    };
-    if (nulls.length) {
-      next++;
-      protobuf.writePackedVarint(next, nulls);
-    };
-    if (undefineds.length) {
-      next++;
-      protobuf.writePackedVarint(next, undefineds);
-    };
-    if (nans.length) {
-      next++;
-      protobuf.writePackedVarint(next, nans);
-    };
-    if (infinitys.length) {
-      next++;
-      protobuf.writePackedVarint(next, infinitys);
-    };
-    if (strings.length) {
-      for (var i = 0; i <= strings.length - 1; i++) {
-        next++
-        protobuf.writeStringField(next, strings[i]);
+        next++;
+        protobuf.writeStringField(next, genesis)
+        if (arrays.length) {
+          next++;
+          protobuf.writePackedVarint(next, arrays);
+        };
+        if (booleans.length) {
+          next++;
+          protobuf.writePackedBoolean(next, booleans);
+        };
+        if (integers.length) {
+          next++;
+          protobuf.writePackedSVarint(next, integers);
+        };
+        if (doubles.length) {
+          next++;
+          protobuf.writePackedDouble(next, doubles);
+        };
+        if (nulls.length) {
+          next++;
+          protobuf.writePackedVarint(next, nulls);
+        };
+        if (undefineds.length) {
+          next++;
+          protobuf.writePackedVarint(next, undefineds);
+        };
+        if (nans.length) {
+          next++;
+          protobuf.writePackedVarint(next, nans);
+        };
+        if (infinitys.length) {
+          next++;
+          protobuf.writePackedVarint(next, infinitys);
+        };
+        if (strings.length) {
+          for (var i = 0; i <= strings.length - 1; i++) {
+            next++
+            protobuf.writeStringField(next, strings[i]);
+          }
+        };
+        let buffer = protobuf.finish();
+        debug('buffer byteLength:', buffer.byteLength)
+        resolve(buffer);
+      } catch (e) {
+        reject(e);
       }
-    };
-    let buffer = protobuf.finish();
-    debug('buffer byteLength:', buffer.byteLength)
+    });
+  }
+  static hydrate (schema, values) {
 
     let outputs = 0;
     const reverse = (schema, object) => {

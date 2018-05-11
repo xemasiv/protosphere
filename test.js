@@ -159,9 +159,6 @@ let values = {
   // errorBoolean: 123
 };
 
-Protosphere.disect(schema, values);
-
-const toPairs = require('lodash/fp/toPairs');
-const sortBy = require('lodash/fp/sortBy');
-const fromPairs = require('lodash/fp/fromPairs');
-const sortObject = (object) => fromPairs(sortBy(0)(toPairs(object)));
+Protosphere
+  .transform(schema, values)
+  .then((buffer) => console.log('result buffer byteLength:', buffer.byteLength));
