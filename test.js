@@ -67,7 +67,7 @@ let object1 = {
   ]
 };
 
-let schema = {
+let schema = Protosphere.createSchema({
   name: Protosphere.String(),
   details: Protosphere.Object({
     verified: Protosphere.Boolean()
@@ -115,7 +115,7 @@ let schema = {
   undefinedObject: Protosphere.Object(),
   nullObject: Protosphere.Object(),
   errorObject: Protosphere.Object(),
-};
+});
 let values = {
   name: 'Xemasiv',
   details: {

@@ -2,8 +2,9 @@ const pbf = require('pbf');
 const warn = console.warn;
 const errors = [ 'Invalid parameter received.' ];
 
-const mapKeys = require('lodash/fp/mapKeys');
+const sha256 = require('js-sha256').sha256;
 
+const mapKeys = require('lodash/fp/mapKeys');
 const toPairs = require('lodash/fp/toPairs');
 const sortBy = require('lodash/fp/sortBy');
 const fromPairs = require('lodash/fp/fromPairs');
@@ -195,8 +196,13 @@ class ArraySchema {
 }
 
 class Protosphere {
-  static disect (schema, values) {
+  static createSchema (schema) {
     schema = sortObject(schema);
+    schema.hash = sha256(JSON.stringify(schema));
+    return schema;
+  }
+  static disect (schema, values) {
+    debug('hash:', schema.hash);
     // inspect(schema);
     // on transform, we push() to arrays,
     // on hydrate, we shift() from arrays
@@ -339,8 +345,22 @@ class Protosphere {
       })(schema);
     };
     traverse(schema, values);
+
+    let genesis = concat(
+      arrays.length ? 1 : 0,
+      booleans.length ? 1 : 0,
+      integers.length ? 1 : 0,
+      doubles.length ? 1 : 0,
+      nulls.length ? 1 : 0,
+      undefineds.length ? 1 : 0,
+      nans.length ? 1 : 0,
+      infinitys.length ? 1 : 0,
+      strings.length ? 1 : 0,
+      ' ', strings.length,
+      ' ', 'hashgoeshere'
+    );
+    debug('genesis:', genesis);
     debug('arrays:', arrays);
-    debug('strings:', strings);
     debug('booleans:', booleans);
     debug('integers:', integers);
     debug('doubles:', doubles);
@@ -348,6 +368,53 @@ class Protosphere {
     debug('undefineds:', undefineds);
     debug('nans:', nans);
     debug('infinitys:', infinitys);
+    debug('strings:', strings);
+
+    let protobuf = new pbf();
+    let next = 0;
+
+    next++;
+    protobuf.writeStringField(next, genesis)
+    if (arrays.length) {
+      next++;
+      protobuf.writePackedVarint(next, arrays);
+    };
+    if (booleans.length) {
+      next++;
+      protobuf.writePackedBoolean(next, booleans);
+    };
+    if (integers.length) {
+      next++;
+      protobuf.writePackedSVarint(next, integers);
+    };
+    if (doubles.length) {
+      next++;
+      protobuf.writePackedDouble(next, doubles);
+    };
+    if (nulls.length) {
+      next++;
+      protobuf.writePackedVarint(next, nulls);
+    };
+    if (undefineds.length) {
+      next++;
+      protobuf.writePackedVarint(next, undefineds);
+    };
+    if (nans.length) {
+      next++;
+      protobuf.writePackedVarint(next, nans);
+    };
+    if (infinitys.length) {
+      next++;
+      protobuf.writePackedVarint(next, infinitys);
+    };
+    if (strings.length) {
+      for (var i = 0; i <= strings.length - 1; i++) {
+        next++
+        protobuf.writeStringField(next, strings[i]);
+      }
+    };
+    let buffer = protobuf.finish();
+    debug('buffer byteLength:', buffer.byteLength)
 
     let outputs = 0;
     const reverse = (schema, object) => {
@@ -638,12 +705,10 @@ class Protosphere2 {
       protobuf.writeStringField(next, genesis)
 
       next++;
-
       protobuf.writePackedSVarint(next, references)
 
       if (booleans.length) {
         next++;
-
         protobuf.writePackedBoolean(next, booleans);
       };
 
@@ -655,7 +720,6 @@ class Protosphere2 {
 
       if (integers.length) {
         next++;
-
         protobuf.writePackedSVarint(next, integers);
       };
       if (strings.length) {
