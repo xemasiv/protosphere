@@ -141,15 +141,6 @@ const concats = (...args) => {
   return str;
 };
 const stringify = (arg) => JSON.stringify(arg, null, 2);
-const groupBy = (arr, n) => {
-	var arr2 = [];
-  for (var i = 0, j = 0; i < arr.length; i++) {
-    if (i >= n && i % n === 0) j++;
-    arr2[j] = arr2[j] || [];
-    arr2[j].push(arr[i])
-  }
-  return arr2;
-};
 const fillArray = (withThis, length) => {
   var arr = new Array(length);
   for (var i = 0; i < length; i++) {
@@ -157,10 +148,8 @@ const fillArray = (withThis, length) => {
   }
   return arr;
 }
-let debug = console.log;
-let inspect = (...parameters) => parameters.map((parameter) => {
-  console.dir(parameter, { depth:null, colors: true })
-});
+let debug = () => {};
+let inspect = () => {};
 
 class BooleanSchema {
   constructor () {
@@ -205,7 +194,6 @@ class Protosphere {
     const schema = this.schema;
     return new Promise((resolve, reject) => {
       try {
-
         debug('hash:', schema.hash);
         // inspect(schema);
         // on transform, we push() to arrays,
@@ -424,157 +412,184 @@ class Protosphere {
       }
     });
   }
-  static hydrate (schema, buffer) {
+  hydrate (buffer) {
+    const schema = this.schema;
     return new Promise((resolve, reject) => {
       try {
         let genesis, switches, overhead,
         arrays, booleans, integers, doubles,
         nulls, undefineds, nans, infinitys,
-        strings;
+        strings, stringCount, hasStrings;
         let handlers = [];
         const reader = (tag, data, pbf) => {
           if (tag === 1) {
             genesis = pbf.readString().split(' ');
             switches = genesis[0].split('').map((x) => parseInt(x));
             stringCount = parseInt(genesis[1]);
+            debug('genesis:', genesis);
+            debug('switches:', switches);
+            debug('stringCount:', stringCount);
             if (stringCount > 0) {
               strings = [];
             }
-            byteCount = parseInt(genesis[2]);
-            if (byteCount > 0) {
-              bytes = [];
-            }
             overhead = 0;
             if (switches[0]) {
+              debug('has arrays');
               overhead++;
               handlers.push((pbf) => {
-                references = pbf.readPackedSVarint();
+                arrays = pbf.readPackedVarint();
               });
             }
             if (switches[1]) {
+              debug('has booleans');
               overhead++;
               handlers.push((pbf) => {
                 booleans = pbf.readPackedBoolean();
               });
             }
             if (switches[2]) {
-              overhead++;
-              handlers.push((pbf) => {
-                doubles = pbf.readPackedDouble();
-              });
-            }
-            if (switches[3]) {
+              debug('has integers');
               overhead++;
               handlers.push((pbf) => {
                 integers = pbf.readPackedSVarint();
               });
             }
-            hasStrings = switches[4] ? true : false;
-            hasBytes = switches[5] ? true : false;
+            if (switches[3]) {
+              debug('has doubles');
+              overhead++;
+              handlers.push((pbf) => {
+                doubles = pbf.readPackedDouble();
+              });
+            }
+            if (switches[4]) {
+              debug('has nulls');
+              overhead++;
+              handlers.push((pbf) => {
+                nulls = pbf.readPackedVarint();
+              });
+            }
+            if (switches[5]) {
+              debug('has undefineds');
+              overhead++;
+              handlers.push((pbf) => {
+                undefineds = pbf.readPackedVarint();
+              });
+            }
+            if (switches[6]) {
+              debug('has nans');
+              overhead++;
+              handlers.push((pbf) => {
+                nans = pbf.readPackedVarint();
+              });
+            }
+            if (switches[7]) {
+              debug('has infinitys');
+              overhead++;
+              infinitys.push((pbf) => {
+                infinitys = pbf.readPackedVarint();
+              });
+            }
+            debug('overhead:', overhead);
+            hasStrings = switches[8] ? true : false;
+            debug('stringCount:', stringCount);
+            debug('hasStrings:', hasStrings);
           } else {
             if (tag <= (1 + overhead)) {
-
-
               var handler = handlers.shift();
               handler(pbf);
               return;
             } else {
               if (tag <= (1 + overhead + stringCount)) {
-
                 strings.push(pbf.readString());
-              } else {
-                if (tag <= (1 + overhead + stringCount + byteCount)) {
-
-                  strings.push(pbf.readBytes());
-                }
               }
             }
           }
         }
         new pbf(buffer).readFields(reader);
+        let outputs = 0;
+        const reverse = (schema, object) => {
+          mapKeys((key) => {
+            outputs++;
+            let s = schema[key];
+            switch (s.type) {
+              case 'boolean':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  object[key] = booleans.shift();
+                }
+                break;
+              case 'string':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  object[key] = strings.shift();
+                }
+                break;
+              case 'integer':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  object[key] = integers.shift();
+                }
+                break;
+              case 'double':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  object[key] = doubles.shift();
+                }
+                break;
+              case 'array':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  let arrayLength = arrays.shift();
+                  object[key] = new Array(arrayLength);
+                  reverse(fillArray(s.schema, arrayLength), object[key]);
+                }
+                break;
+              case 'object':
+                if (undefineds.includes(outputs)) {
+                  object[key] = undefined;
+                } else if (nulls.includes(outputs)) {
+                  object[key] = null;
+                } else {
+                  object[key] = {};
+                  reverse(s.contents, object[key]);
+                }
+                break;
+            }
+            debug(outputs, key);
+          })(schema);
+          return object;
+        };
+        let reversed = reverse(schema, {});
+        debug('arrays:', arrays);
+        debug('strings:', strings);
+        debug('booleans:', booleans);
+        debug('integers:', integers);
+        debug('doubles:', doubles);
+        debug('nulls:', nulls);
+        debug('undefineds:', undefineds);
+        debug('nans:', nans);
+        debug('infinitys:', infinitys);
+        inspect(reversed);
+        resolve(reversed);
       } catch (e) {
         reject(e);
       }
     });
-    let outputs = 0;
-    const reverse = (schema, object) => {
-      mapKeys((key) => {
-        outputs++;
-        let s = schema[key];
-        switch (s.type) {
-          case 'boolean':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              object[key] = booleans.shift();
-            }
-            break;
-          case 'string':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              object[key] = strings.shift();
-            }
-            break;
-          case 'integer':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              object[key] = integers.shift();
-            }
-            break;
-          case 'double':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              object[key] = doubles.shift();
-            }
-            break;
-          case 'array':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              let arrayLength = arrays.shift();
-              object[key] = new Array(arrayLength);
-              reverse(fillArray(s.schema, arrayLength), object[key]);
-            }
-            break;
-          case 'object':
-            if (undefineds.includes(outputs)) {
-              object[key] = undefined;
-            } else if (nulls.includes(outputs)) {
-              object[key] = null;
-            } else {
-              object[key] = {};
-              reverse(s.contents, object[key]);
-            }
-            break;
-        }
-        debug(outputs, key);
-      })(schema);
-      return object;
-    };
-    let reversed = reverse(schema, {});
-    debug('arrays:', arrays);
-    debug('strings:', strings);
-    debug('booleans:', booleans);
-    debug('integers:', integers);
-    debug('doubles:', doubles);
-    debug('nulls:', nulls);
-    debug('undefineds:', undefineds);
-    debug('nans:', nans);
-    debug('infinitys:', infinitys);
-    inspect(reversed);
   }
   static Boolean () {
     return new BooleanSchema();
@@ -594,472 +609,10 @@ class Protosphere {
   static Array (schema) {
     return new ArraySchema(schema);
   }
-}
-const VALUE_TYPES = {
-  BOOLEAN_IN_ARRAY: 1,
-  BOOLEAN_IN_OBJECT: 2,
-  BOOLEAN_IN_ROOT: 3,
-
-  DOUBLE_IN_ARRAY: 4,
-  DOUBLE_IN_OBJECT: 5,
-  DOUBLE_IN_ROOT: 6,
-
-  INTEGER_IN_ARRAY: 7,
-  INTEGER_IN_OBJECT: 8,
-  INTEGER_IN_ROOT: 9,
-
-  STRING_IN_ARRAY: 10,
-  STRING_IN_OBJECT: 11,
-  STRING_IN_ROOT: 12,
-
-  BYTES_IN_ARRAY: 13,
-  BYTES_IN_OBJECT: 14,
-  BYTES_IN_ROOT: 15,
-
-  NULL_IN_ARRAY: 16,
-  NULL_IN_OBJECT: 17,
-  NULL_IN_ROOT: 18,
-
-  UNDEFINED_IN_ARRAY: 19,
-  UNDEFINED_IN_OBJECT: 20,
-  UNDEFINED_IN_ROOT: 21,
-
-  NAN_IN_ARRAY: 22,
-  NAN_IN_OBJECT: 23,
-  NAN_IN_ROOT: 24,
-
-  INFINITY_IN_ARRAY: 25,
-  INFINITY_IN_OBJECT: 26,
-  INFINITY_IN_ROOT: 27,
-
-  PARENT_IS_OBJECT: 28,
-  PARENT_IS_ARRAY: 29,
-  ARRAY_START: 30,
-  ARRAY_END: 31,
-  OBJECT_START: 32,
-  OBJECT_END: 33
-};
-class Protosphere2 {
-  static obj2buff (parameter) {
-    return new Promise((resolve, reject) => {
-      if (classify(parameter) !== 'object') reject(errors[0]);
-
-      const references = [];
-      const booleans = [];
-      const doubles = [];
-      const integers = [];
-      const strings = [];
-      const bytes = [];
-      const traverse = (obj, parent) => {
-        Object.keys(obj).map((key) => {
-          let val = obj[key];
-          switch (classify(val)) {
-            case 'undefined':
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.UNDEFINED_IN_ARRAY, 0);
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.UNDEFINED_IN_OBJECT, 0);
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.UNDEFINED_IN_ROOT, 0);
-              }
-              break;
-            case 'null':
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.NULL_IN_ARRAY, 0);
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.NULL_IN_OBJECT, 0);
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.NULL_IN_ROOT, 0);
-              }
-              break;
-            case 'nan':
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.NAN_IN_ARRAY, 0);
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.NAN_IN_OBJECT, 0);
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.NAN_IN_ROOT, 0);
-              }
-              break;
-            case 'infinity':
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.INFINITY_IN_ARRAY, 0);
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.INFINITY_IN_OBJECT, 0);
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.INFINITY_IN_ROOT, 0);
-              }
-              break;
-            case 'boolean':
-              if (booleans.includes(val) === false) booleans.push(val);
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.BOOLEAN_IN_ARRAY, booleans.indexOf(val));
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.BOOLEAN_IN_OBJECT, booleans.indexOf(val));
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.BOOLEAN_IN_ROOT, booleans.indexOf(val));
-              }
-              break;
-            case 'double':
-              if (doubles.includes(val) === false) doubles.push(val);
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.DOUBLE_IN_ARRAY, doubles.indexOf(val));
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.DOUBLE_IN_OBJECT, doubles.indexOf(val));
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.DOUBLE_IN_ROOT, doubles.indexOf(val));
-              }
-              break;
-            case 'integer':
-              if (Math.abs(val) >= Math.pow(2, 50) -1) {
-                warn('@ key', key, '@ val', val);
-                warn('raw >= 50-bit int is currently unsafe.');
-              }
-              if (integers.includes(val) === false) integers.push(val);
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.INTEGER_IN_ARRAY, integers.indexOf(val));
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.INTEGER_IN_OBJECT, integers.indexOf(val));
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.INTEGER_IN_ROOT, integers.indexOf(val));
-              }
-              break;
-            case 'string':
-              if (strings.includes(val) === false) strings.push(val);
-              if (strings.includes(key) === false) strings.push(key);
-              if (parent === VALUE_TYPES.PARENT_IS_ARRAY) {
-                references.push(strings.indexOf(key), VALUE_TYPES.STRING_IN_ARRAY, strings.indexOf(val));
-              } else if (parent === VALUE_TYPES.PARENT_IS_OBJECT) {
-                references.push(strings.indexOf(key), VALUE_TYPES.STRING_IN_OBJECT, strings.indexOf(val));
-              } else {
-                references.push(strings.indexOf(key), VALUE_TYPES.STRING_IN_ROOT, strings.indexOf(val));
-              }
-              break;
-            case 'array':
-              if (strings.includes(key) === false) strings.push(key);
-              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_START, parent);
-              traverse(val, VALUE_TYPES.PARENT_IS_ARRAY);
-              references.push(strings.indexOf(key), VALUE_TYPES.ARRAY_END, parent);
-              break;
-            case 'object':
-              if (strings.includes(key) === false) strings.push(key);
-              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_START, parent);
-              traverse(val, VALUE_TYPES.PARENT_IS_OBJECT);
-              references.push(strings.indexOf(key), VALUE_TYPES.OBJECT_END, parent);
-              break;
-          }
-        });
-      };
-      traverse(parameter, undefined);
-      let genesis = concat(
-        references.length ? 1 : 0,
-        booleans.length ? 1 : 0,
-        doubles.length ? 1 : 0,
-        integers.length ? 1 : 0,
-        strings.length ? 1 : 0,
-        bytes.length ? 1 : 0,
-        ' ', strings.length,
-        ' ', bytes.length
-      );
-
-
-
-
-
-
-
-
-
-      let protobuf = new pbf();
-      let next = 0;
-
-      next++;
-
-      protobuf.writeStringField(next, genesis)
-
-      next++;
-      protobuf.writePackedSVarint(next, references)
-
-      if (booleans.length) {
-        next++;
-        protobuf.writePackedBoolean(next, booleans);
-      };
-
-      if (doubles.length) {
-        next++;
-
-        protobuf.writePackedDouble(next, doubles);
-      };
-
-      if (integers.length) {
-        next++;
-        protobuf.writePackedSVarint(next, integers);
-      };
-      if (strings.length) {
-        for (var i = 0; i <= strings.length - 1; i++) {
-          next++
-
-          protobuf.writeStringField(next, strings[i]);
-        }
-      };
-      if (bytes.length) {
-        for (var i = 0; i <= bytes.length - 1; i++) {
-          next++
-
-          protobuf.writeBytesField(next, bytes[i]);
-        }
-      };
-
-      let buffer = protobuf.finish();
-
-      resolve(buffer);
-    });
-  }
-  static buff2obj (buffer) {
-    return new Promise((resolve, reject) => {
-      let genesis, references,
-      switches, overhead,
-      booleans, doubles, integers,
-      strings, bytes,
-      hasBooleans, hasDoubles, hasVarints, hasStrings, hasBytes,
-      referenceCount, stringCount, byteCount;
-      let handlers = [];
-      const reader = (tag, data, pbf) => {
-        if (tag === 1) {
-          genesis = pbf.readString().split(' ');
-          switches = genesis[0].split('').map((x) => parseInt(x));
-          stringCount = parseInt(genesis[1]);
-          if (stringCount > 0) {
-            strings = [];
-          }
-          byteCount = parseInt(genesis[2]);
-          if (byteCount > 0) {
-            bytes = [];
-          }
-          overhead = 0;
-          if (switches[0]) {
-            overhead++;
-            handlers.push((pbf) => {
-              references = pbf.readPackedSVarint();
-            });
-          }
-          if (switches[1]) {
-            overhead++;
-            handlers.push((pbf) => {
-              booleans = pbf.readPackedBoolean();
-            });
-          }
-          if (switches[2]) {
-            overhead++;
-            handlers.push((pbf) => {
-              doubles = pbf.readPackedDouble();
-            });
-          }
-          if (switches[3]) {
-            overhead++;
-            handlers.push((pbf) => {
-              integers = pbf.readPackedSVarint();
-            });
-          }
-          hasStrings = switches[4] ? true : false;
-          hasBytes = switches[5] ? true : false;
-        } else {
-          if (tag <= (1 + overhead)) {
-
-
-            var handler = handlers.shift();
-            handler(pbf);
-            return;
-          } else {
-            if (tag <= (1 + overhead + stringCount)) {
-
-              strings.push(pbf.readString());
-            } else {
-              if (tag <= (1 + overhead + stringCount + byteCount)) {
-
-                strings.push(pbf.readBytes());
-              }
-            }
-          }
-        }
-      }
-      new pbf(buffer).readFields(reader);
-      /*
-
-
-
-
-
-       */
-      references = groupBy(references, 3);
-
-      let returnObject = {};
-      let tempArrays = [];
-      let tempObjects = [];
-      references.map((reference) => {
-
-        switch (reference[1]) {
-          case VALUE_TYPES.UNDEFINED_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(undefined);
-            return;
-            break;
-          case VALUE_TYPES.UNDEFINED_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = undefined;
-            return;
-            break;
-          case VALUE_TYPES.UNDEFINED_IN_ROOT:
-            returnObject[strings[reference[0]]] = undefined;
-            return;
-            break;
-
-          case VALUE_TYPES.NULL_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(null);
-            return;
-            break;
-          case VALUE_TYPES.NULL_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = null;
-            return;
-            break;
-          case VALUE_TYPES.NULL_IN_ROOT:
-            returnObject[strings[reference[0]]] = null;
-            return;
-            break;
-
-          case VALUE_TYPES.NAN_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(NaN);
-            return;
-            break;
-          case VALUE_TYPES.NAN_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = NaN;
-            return;
-            break;
-          case VALUE_TYPES.NAN_IN_ROOT:
-            returnObject[strings[reference[0]]] = NaN;
-            return;
-            break;
-
-          case VALUE_TYPES.INFINITY_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(Infinity);
-            return;
-            break;
-          case VALUE_TYPES.INFINITY_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = Infinity;
-            return;
-            break;
-          case VALUE_TYPES.INFINITY_IN_ROOT:
-            returnObject[strings[reference[0]]] = Infinity;
-            return;
-            break;
-
-          case VALUE_TYPES.BOOLEAN_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(booleans[reference[2]]);
-            return;
-            break;
-          case VALUE_TYPES.BOOLEAN_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = booleans[reference[2]];
-            return;
-            break;
-          case VALUE_TYPES.BOOLEAN_IN_ROOT:
-            returnObject[strings[reference[0]]] = booleans[reference[2]];
-            return;
-            break;
-
-          case VALUE_TYPES.DOUBLE_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(doubles[reference[2]]);
-            return;
-            break;
-          case VALUE_TYPES.DOUBLE_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = doubles[reference[2]];
-            return;
-            break;
-          case VALUE_TYPES.DOUBLE_IN_ROOT:
-            returnObject[strings[reference[0]]] = doubles[reference[2]];
-            return;
-            break;
-
-          case VALUE_TYPES.INTEGER_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(integers[reference[2]]);
-            return;
-            break;
-          case VALUE_TYPES.INTEGER_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = integers[reference[2]];
-            return;
-            break;
-          case VALUE_TYPES.INTEGER_IN_ROOT:
-            returnObject[strings[reference[0]]] = integers[reference[2]];
-            return;
-            break;
-
-          case VALUE_TYPES.STRING_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(strings[reference[2]]);
-            return;
-            break;
-          case VALUE_TYPES.STRING_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = strings[reference[2]];
-            return;
-            break;
-          case VALUE_TYPES.STRING_IN_ROOT:
-            returnObject[strings[reference[0]]] = strings[reference[2]];
-            return;
-            break;
-
-          case VALUE_TYPES.BYTES_IN_ARRAY:
-            tempArrays[tempArrays.length - 1].push(bytes[reference[2]]);
-            return;
-            break;
-          case VALUE_TYPES.BYTES_IN_OBJECT:
-            tempObjects[tempObjects.length - 1][strings[reference[0]]] = bytes[reference[2]];
-            return;
-            break;
-          case VALUE_TYPES.BYTES_IN_ROOT:
-            returnObject[strings[reference[0]]] = bytes[reference[2]];
-            return;
-            break;
-
-          case VALUE_TYPES.ARRAY_START:
-            tempArrays.push([]);
-            break;
-          case VALUE_TYPES.ARRAY_END:
-            if (tempArrays.length >= 2 && reference[2] === VALUE_TYPES.PARENT_IS_ARRAY) {
-              tempArrays[tempArrays.length - 2].push(tempArrays[tempArrays.length - 1]);
-              tempArrays.splice(-1, 1);
-              return;
-            };
-            if (tempObjects.length >= 1 && reference[2] === VALUE_TYPES.PARENT_IS_OBJECT) {
-              tempObjects[tempObjects.length - 1][strings[reference[0]]] = tempArrays[tempArrays.length - 1];
-              tempArrays.splice(-1, 1);
-              return;
-            };
-            returnObject[strings[reference[0]]] = tempArrays[tempArrays.length - 1];
-            tempArrays.splice(-1, 1);
-            break;
-          case VALUE_TYPES.OBJECT_START:
-            tempObjects.push({});
-            break;
-          case VALUE_TYPES.OBJECT_END:
-            if (tempArrays.length >= 1 && reference[2] === VALUE_TYPES.PARENT_IS_ARRAY) {
-              tempArrays[tempArrays.length - 1].push(tempObjects[tempObjects.length - 1]);
-              tempObjects.splice(-1, 1);
-              return;
-            };
-            if (tempObjects.length >= 2 && reference[2] === VALUE_TYPES.PARENT_IS_OBJECT) {
-              tempObjects[tempObjects.length - 2][strings[reference[0]]] = tempObjects[tempObjects.length - 1];
-              tempObjects.splice(-1, 1);
-              return;
-            };
-            returnObject[strings[reference[0]]] = tempObjects[tempObjects.length - 1];
-            tempObjects.splice(-1, 1);
-            break;
-        }
-      });
-      resolve(returnObject);
+  static enableDebug () {
+    debug = console.log;
+    inspect = (...parameters) => parameters.map((parameter) => {
+      console.dir(parameter, { depth:null, colors: true })
     });
   }
 }

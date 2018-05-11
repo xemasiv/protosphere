@@ -1,8 +1,7 @@
-const util = require('util')
-
-let Protosphere = require('./index.js');
-
-
+const Protosphere = require('./index.js');
+const inspect = (...parameters) => parameters.map((parameter) => {
+  console.dir(parameter, { depth:null, colors: true })
+});
 const ps = new Protosphere({
   name: Protosphere.String(),
   details: Protosphere.Object({
@@ -96,6 +95,12 @@ let values = {
   // errorBoolean: 123
 };
 
-
 ps.transform(values)
-  .then((buffer) => console.log('result buffer byteLength:', buffer.byteLength));
+  .then((buffer) => {
+    console.log('transformed result buffer byteLength:', buffer.byteLength);
+    return ps.hydrate(buffer);
+  })
+  .then((result) => {
+    console.log('hydrated result:');
+    inspect(result);
+  });
