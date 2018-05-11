@@ -93,7 +93,10 @@ let schema = {
   }),
   undefinedBoolean: Protosphere.Boolean(),
   nullBoolean: Protosphere.Boolean(),
-  errorBoolean: Protosphere.Boolean()
+  errorBoolean: Protosphere.Boolean(),
+  undefinedString: Protosphere.String(),
+  nullString: Protosphere.String(),
+  errorString: Protosphere.String(),
 };
 let values = {
   name: 'Xemasiv',
@@ -120,7 +123,10 @@ let values = {
   },
   undefinedBoolean: undefined,
   nullBoolean: null,
-  errorBoolean: 123
+  undefinedString: undefined,
+  nullString: null,
+  // errorString: 123
+  // errorBoolean: 123
 };
 
 Protosphere.disect(schema, values);

@@ -169,83 +169,28 @@ class BooleanSchema {
 class StringSchema {
   constructor () {
     this.type = 'string';
-    this.allowed = ['string', 'undefined', 'null'];
-    this.required = false;
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['string'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class IntegerSchema {
   constructor () {
     this.type = 'integer';
-    this.allowed = ['integer', 'undefined', 'null', 'nan', 'infinity'];
-    this.required = false;
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['integer'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class DoubleSchema {
   constructor () {
     this.type = 'double';
-    this.allowed = ['double', 'undefined', 'null', 'nan', 'infinity'];
-    this.required = false;
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['double'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class ObjectSchema {
   constructor (contents) {
     this.type = 'object';
-    this.allowed = ['object', 'undefined', 'null'];
     this.contents = sortObject(contents);
-    this.required = false;
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['object'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 class ArraySchema {
   constructor (schema) {
     this.type = 'array';
-    this.allowed = ['array', 'undefined', 'null'];
     this.schema = schema;
-    this.required = false;
-  }
-  required () {
-    this.required = true;
-    this.allowed.splice(x.indexOf('undefined'), 1);
-  }
-  strict () {
-    this.allowed = ['array'];
-    this.allowed.splice(x.indexOf('undefined'), 1);
-    this.allowed.splice(x.indexOf('null'), 1);
   }
 }
 
@@ -297,7 +242,22 @@ class Protosphere {
             }
             break;
           case 'string':
-            strings.push(v);
+            switch (classify(v)) {
+              case 'string':
+                strings.push(v);
+                break;
+              case 'null':
+                nulls.push(inputs);
+                break;
+              case 'undefined':
+                undefineds.push(inputs);
+                break;
+              default:
+                throw new TypeError(
+                  concats('Unexpected', classify(v), 'on', s.type, 'field @', key, 'of', stringify(values))
+                );
+                break;
+            }
             break;
           case 'integer':
             integers.push(v);
@@ -345,7 +305,13 @@ class Protosphere {
             }
             break;
           case 'string':
-            object[key] = strings.shift();
+            if (undefineds.includes(outputs)) {
+              object[key] = undefined;
+            } else if (nulls.includes(outputs)) {
+              object[key] = null;
+            } else {
+              object[key] = strings.shift();
+            }
             break;
           case 'integer':
             object[key] = integers.shift();
