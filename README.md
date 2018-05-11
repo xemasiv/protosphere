@@ -122,8 +122,9 @@ let ps = new Protosphere({
 
 #### Testing
 * Provided example shows comparison between two requests:
-* Req # 1: `axios` + `protosphere` + `application/octet-stream`
-* Req # 2: `axios` + `application/json`
+* Req # 1: `axios` + `application/json`
+* Req # 2: `axios` + `JSON.stringify` + `application/octet-stream`
+* Req # 3: `axios` + `protosphere` + `application/octet-stream`
 ```
 npm run playground
 ```
