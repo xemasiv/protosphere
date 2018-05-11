@@ -3,12 +3,63 @@
 <script src="/dist/protosphere.min.js"></script>
 <script>
   const Buffer = buffer.Buffer;
+
+
+  const ps = new Protosphere({
+    name: Protosphere.String(),
+    details: Protosphere.Object({
+      verified: Protosphere.Boolean()
+    }),
+    age: Protosphere.Integer(),
+    bitcoins: Protosphere.Double(),
+    memberships: Protosphere.Array(
+      Protosphere.String()
+    ),
+    coinPairs: Protosphere.Array(
+      Protosphere.Array(
+        Protosphere.String()
+      )
+    ),
+    configs: Protosphere.Object({
+      video: Protosphere.Object({
+        hue: Protosphere.Integer(),
+        saturation: Protosphere.Integer()
+      }),
+      audio: Protosphere.Object({
+        volume: Protosphere.Double()
+      })
+    }),
+
+    undefinedBoolean: Protosphere.Boolean(),
+    nullBoolean: Protosphere.Boolean(),
+    errorBoolean: Protosphere.Boolean(),
+
+    undefinedString: Protosphere.String(),
+    nullString: Protosphere.String(),
+    errorString: Protosphere.String(),
+
+    undefinedInteger: Protosphere.Integer(),
+    nullInteger: Protosphere.Integer(),
+    errorInteger: Protosphere.Integer(),
+
+    undefinedDouble: Protosphere.Double(),
+    nullDouble: Protosphere.Double(),
+    errorDouble: Protosphere.Double(),
+
+    undefinedArray: Protosphere.Array(),
+    nullArray: Protosphere.Array(),
+    errorArray: Protosphere.Array(),
+
+    undefinedObject: Protosphere.Object(),
+    nullObject: Protosphere.Object(),
+    errorObject: Protosphere.Object(),
+  });
   axios({
     method:'get',
     url:'/endpoint/arraybuffer?456',
     responseType:'arraybuffer'
   })
-  .then((response) => Protosphere.buff2obj(Buffer(response.data)))
+  .then((response) => ps.hydrate(Buffer(response.data)))
   .then((result) => console.log('arraybuffer', result))
   .catch(console.error);
 
@@ -17,15 +68,6 @@
     url:'/endpoint/json?123',
     responseType:'json'
   })
-  .then((response) =>console.log(response.data))
-  .then((result) => console.log('json', result))
-  .catch(console.error);
-
-  axios({
-    method:'get',
-    url:'/endpoint/raw?123'
-  })
-  .then((response) =>console.log(response.data))
-  .then((result) => console.log('raw', result))
+  .then((response) =>console.log('json', response.data))
   .catch(console.error);
 </script>
