@@ -1,6 +1,6 @@
 {
   "name": "protosphere",
-  "version": "4.1.2",
+  "version": "4.1.3",
   "description": "protocol buffers made easy",
   "main": "index.js",
   "scripts": {

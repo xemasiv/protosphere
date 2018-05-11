@@ -65,7 +65,7 @@
   axios({
     method:'get',
     url:'/endpoint/arraybuffer_raw',
-    responseType:'json'
+    responseType:'arraybuffer'
   })
   .then((response) =>console.log('json', response.data))
   .catch(console.error);
