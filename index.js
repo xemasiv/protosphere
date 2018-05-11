@@ -196,12 +196,13 @@ class ArraySchema {
 }
 
 class Protosphere {
-  static createSchema (schema) {
+  constructor (schema) {
     schema = sortObject(schema);
     schema.hash = sha256(JSON.stringify(schema));
-    return schema;
+    this.schema = schema;
   }
-  static transform (schema, values) {
+  transform (values) {
+    const schema = this.schema;
     return new Promise((resolve, reject) => {
       try {
 
@@ -423,8 +424,78 @@ class Protosphere {
       }
     });
   }
-  static hydrate (schema, values) {
+  static hydrate (schema, buffer) {
+    return new Promise((resolve, reject) => {
+      try {
+        let genesis, switches, overhead,
+        arrays, booleans, integers, doubles,
+        nulls, undefineds, nans, infinitys,
+        strings;
+        let handlers = [];
+        const reader = (tag, data, pbf) => {
+          if (tag === 1) {
+            genesis = pbf.readString().split(' ');
+            switches = genesis[0].split('').map((x) => parseInt(x));
+            stringCount = parseInt(genesis[1]);
+            if (stringCount > 0) {
+              strings = [];
+            }
+            byteCount = parseInt(genesis[2]);
+            if (byteCount > 0) {
+              bytes = [];
+            }
+            overhead = 0;
+            if (switches[0]) {
+              overhead++;
+              handlers.push((pbf) => {
+                references = pbf.readPackedSVarint();
+              });
+            }
+            if (switches[1]) {
+              overhead++;
+              handlers.push((pbf) => {
+                booleans = pbf.readPackedBoolean();
+              });
+            }
+            if (switches[2]) {
+              overhead++;
+              handlers.push((pbf) => {
+                doubles = pbf.readPackedDouble();
+              });
+            }
+            if (switches[3]) {
+              overhead++;
+              handlers.push((pbf) => {
+                integers = pbf.readPackedSVarint();
+              });
+            }
+            hasStrings = switches[4] ? true : false;
+            hasBytes = switches[5] ? true : false;
+          } else {
+            if (tag <= (1 + overhead)) {
 
+
+              var handler = handlers.shift();
+              handler(pbf);
+              return;
+            } else {
+              if (tag <= (1 + overhead + stringCount)) {
+
+                strings.push(pbf.readString());
+              } else {
+                if (tag <= (1 + overhead + stringCount + byteCount)) {
+
+                  strings.push(pbf.readBytes());
+                }
+              }
+            }
+          }
+        }
+        new pbf(buffer).readFields(reader);
+      } catch (e) {
+        reject(e);
+      }
+    });
     let outputs = 0;
     const reverse = (schema, object) => {
       mapKeys((key) => {
@@ -761,7 +832,6 @@ class Protosphere2 {
       referenceCount, stringCount, byteCount;
       let handlers = [];
       const reader = (tag, data, pbf) => {
-
         if (tag === 1) {
           genesis = pbf.readString().split(' ');
           switches = genesis[0].split('').map((x) => parseInt(x));
@@ -776,39 +846,30 @@ class Protosphere2 {
           overhead = 0;
           if (switches[0]) {
             overhead++;
-
             handlers.push((pbf) => {
               references = pbf.readPackedSVarint();
             });
           }
           if (switches[1]) {
             overhead++;
-
             handlers.push((pbf) => {
               booleans = pbf.readPackedBoolean();
             });
           }
           if (switches[2]) {
             overhead++;
-
             handlers.push((pbf) => {
               doubles = pbf.readPackedDouble();
             });
           }
           if (switches[3]) {
             overhead++;
-
             handlers.push((pbf) => {
               integers = pbf.readPackedSVarint();
             });
           }
           hasStrings = switches[4] ? true : false;
           hasBytes = switches[5] ? true : false;
-
-
-
-
-
         } else {
           if (tag <= (1 + overhead)) {
 
