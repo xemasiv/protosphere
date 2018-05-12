@@ -505,45 +505,45 @@ class Protosphere {
             let s = schema[key];
             switch (s.type) {
               case 'boolean':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   object[key] = booleans.shift();
                 }
                 break;
               case 'string':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   object[key] = strings.shift();
                 }
                 break;
               case 'integer':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   object[key] = integers.shift();
                 }
                 break;
               case 'double':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   object[key] = doubles.shift();
                 }
                 break;
               case 'array':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   let arrayLength = arrays.shift();
@@ -552,9 +552,9 @@ class Protosphere {
                 }
                 break;
               case 'object':
-                if (undefineds.includes(outputs)) {
+                if (typeof undefineds !== 'undefined' && undefineds.includes(outputs)) {
                   object[key] = undefined;
-                } else if (nulls.includes(outputs)) {
+                } else if (typeof nulls !== 'undefined' && nulls.includes(outputs)) {
                   object[key] = null;
                 } else {
                   object[key] = {};
