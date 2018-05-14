@@ -1,9 +1,6 @@
 <script src="/helpers/axios.min.js"></script>
-<script src="/helpers/buffer.min.js"></script>
 <script src="/dist/protosphere.min.js"></script>
 <script>
-  const Buffer = buffer.Buffer;
-
   const ps = new Protosphere({
     name: Protosphere.String(),
     details: Protosphere.Object({
@@ -67,7 +64,7 @@
     url:'/endpoint/arraybuffer_raw',
     responseType:'arraybuffer'
   })
-  .then((response) =>console.log('json', response.data))
+  .then((response) =>console.log('raw', response.data))
   .catch(console.error);
 
   axios({
@@ -75,7 +72,7 @@
     url:'/endpoint/arraybuffer_protosphere',
     responseType:'arraybuffer'
   })
-  .then((response) => ps.hydrate(Buffer(response.data)))
+  .then((response) => ps.hydrate(response.data))
   .then((result) => console.log('arraybuffer', result))
   .catch(console.error);
 </script>

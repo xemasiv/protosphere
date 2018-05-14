@@ -143,7 +143,6 @@ const fillArray = (withThis, length) => {
   }
   return arr;
 }
-let debug = () => {};
 let inspect = () => {};
 
 class BooleanSchema {
@@ -202,16 +201,16 @@ class Protosphere {
         const infinitys = [];
         let inputs = 0;
         const traverse = (schema, values) => {
-          debug('\n\n');
+
           inspect(schema);
-          debug('\n\n');
+
           mapKeys((key) => {
             inputs++;
             let s = schema[key];
             let v = values[key];
             /*
             if (s.type !== classify(v)) {
-              debug('schema mismatch', s, v);
+
             } */
             switch (s.type) {
               case 'boolean':
@@ -326,7 +325,7 @@ class Protosphere {
                 }
                 break;
             }
-            debug(inputs, key, v, s.type);
+
           })(schema);
         };
         traverse(schema, values);
@@ -342,16 +341,16 @@ class Protosphere {
           strings.length ? 1 : 0,
           ' ', strings.length
         );
-        debug('genesis:', genesis);
-        debug('arrays:', arrays);
-        debug('booleans:', booleans);
-        debug('integers:', integers);
-        debug('doubles:', doubles);
-        debug('nulls:', nulls);
-        debug('undefineds:', undefineds);
-        debug('nans:', nans);
-        debug('infinitys:', infinitys);
-        debug('strings:', strings);
+
+
+
+
+
+
+
+
+
+
 
         let protobuf = new pbf();
         let next = 0;
@@ -397,7 +396,6 @@ class Protosphere {
           }
         };
         let buffer = protobuf.finish();
-        debug('buffer byteLength:', buffer.byteLength)
         resolve(buffer);
       } catch (e) {
         reject(e);
@@ -408,6 +406,9 @@ class Protosphere {
     const schema = this.schema;
     return new Promise((resolve, reject) => {
       try {
+        if (classify(buffer) !== 'uint8array') {
+          buffer = new Uint8Array(buffer);
+        }
         let genesis, switches, overhead,
         arrays, booleans, integers, doubles,
         nulls, undefineds, nans, infinitys,
@@ -418,73 +419,73 @@ class Protosphere {
             genesis = pbf.readString().split(' ');
             switches = genesis[0].split('').map((x) => parseInt(x));
             stringCount = parseInt(genesis[1]);
-            debug('genesis:', genesis);
-            debug('switches:', switches);
-            debug('stringCount:', stringCount);
+
+
+
             if (stringCount > 0) {
               strings = [];
             }
             overhead = 0;
             if (switches[0]) {
-              debug('has arrays');
+
               overhead++;
               handlers.push((pbf) => {
                 arrays = pbf.readPackedVarint();
               });
             }
             if (switches[1]) {
-              debug('has booleans');
+
               overhead++;
               handlers.push((pbf) => {
                 booleans = pbf.readPackedBoolean();
               });
             }
             if (switches[2]) {
-              debug('has integers');
+
               overhead++;
               handlers.push((pbf) => {
                 integers = pbf.readPackedSVarint();
               });
             }
             if (switches[3]) {
-              debug('has doubles');
+
               overhead++;
               handlers.push((pbf) => {
                 doubles = pbf.readPackedDouble();
               });
             }
             if (switches[4]) {
-              debug('has nulls');
+
               overhead++;
               handlers.push((pbf) => {
                 nulls = pbf.readPackedVarint();
               });
             }
             if (switches[5]) {
-              debug('has undefineds');
+
               overhead++;
               handlers.push((pbf) => {
                 undefineds = pbf.readPackedVarint();
               });
             }
             if (switches[6]) {
-              debug('has nans');
+
               overhead++;
               handlers.push((pbf) => {
                 nans = pbf.readPackedVarint();
               });
             }
             if (switches[7]) {
-              debug('has infinitys');
+
               overhead++;
               infinitys.push((pbf) => {
                 infinitys = pbf.readPackedVarint();
               });
             }
-            debug('overhead:', overhead);
+
             hasStrings = switches[8] ? true : false;
-            debug('stringCount:', stringCount);
-            debug('hasStrings:', hasStrings);
+
+
           } else {
             if (tag <= (1 + overhead)) {
               var handler = handlers.shift();
@@ -562,20 +563,20 @@ class Protosphere {
                 }
                 break;
             }
-            debug(outputs, key);
+
           })(schema);
           return object;
         };
         let reversed = reverse(schema, {});
-        debug('arrays:', arrays);
-        debug('strings:', strings);
-        debug('booleans:', booleans);
-        debug('integers:', integers);
-        debug('doubles:', doubles);
-        debug('nulls:', nulls);
-        debug('undefineds:', undefineds);
-        debug('nans:', nans);
-        debug('infinitys:', infinitys);
+
+
+
+
+
+
+
+
+
         inspect(reversed);
         resolve(reversed);
       } catch (e) {
@@ -601,8 +602,7 @@ class Protosphere {
   static Array (schema) {
     return new ArraySchema(schema);
   }
-  static enableDebug () {
-    debug = console.log;
+  static enableInspect () {
     inspect = (...parameters) => parameters.map((parameter) => {
       console.dir(parameter, { depth:null, colors: true })
     });
